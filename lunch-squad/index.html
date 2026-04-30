@@ -3161,6 +3161,96 @@ function renderNamePanel(panelId, onClickName) {
   });
 }
 
+/* ============ GENERIC ORDER ENFORCEMENT (다트/인형뽑기/두더지/양궁) ============
+   - 농구슛과 동일한 방식으로 시작 시 무작위 순서를 정하고,
+     본인 차례에만 클릭 가능하게 하며, 시작 전 "랜덤 섞기"로 다시 섞을 수 있음.
+   - state[gameKey + 'Order'] / state[gameKey + 'OrderIdx'] 사용
+*/
+const ORDER_GAME_NAME_HANDLERS = {
+  dart:    (n) => onDartName(n),
+  claw:    (n) => onClawName(n),
+  mole:    (n) => onMoleName(n),
+  archery: (n) => onArcheryName(n),
+};
+
+function isOrderedGameRunning(gameKey) {
+  if (gameKey === 'dart')    return !!state.dartAimRunning;
+  if (gameKey === 'claw')    return !!state.clawMoveRunning;
+  if (gameKey === 'mole')    return !!state.moleRunning;
+  if (gameKey === 'archery') return !!state.archeryPowerRunning;
+  return false;
+}
+
+function renderOrderedNamePanel(panelId, gameKey) {
+  const panel = $(panelId);
+  panel.innerHTML = '<h3>뽑을 사람</h3>';
+  const order = state[gameKey + 'Order'];
+  const idx = state[gameKey + 'OrderIdx'] || 0;
+  if (!order) {
+    state.attendingPool.forEach(name => {
+      const item = document.createElement('div');
+      item.className = 'name-item locked';
+      item.textContent = name;
+      panel.appendChild(item);
+    });
+    return;
+  }
+  order.forEach((name, i) => {
+    const item = document.createElement('div');
+    item.className = 'name-item';
+    if (state.picks[name]) item.classList.add('done');
+    if (state.currentPicker === name) item.classList.add('selected');
+    if (i !== idx && !state.picks[name]) item.classList.add('locked');
+    const badge = `<span class="order-badge">${i + 1}</span>`;
+    const txt = state.picks[name] ? `${name} → ${state.picks[name]}조` : name;
+    item.innerHTML = badge + txt;
+    item.onclick = () => {
+      if (state.picks[name]) return;
+      if (i !== idx) {
+        showToast('지금은 ' + order[idx] + '님 차례예요');
+        return;
+      }
+      const handler = ORDER_GAME_NAME_HANDLERS[gameKey];
+      if (handler) handler(name);
+    };
+    panel.appendChild(item);
+  });
+  // 랜덤 섞기 버튼: 게임이 아직 시작되기 전(인덱스 0 + picks 비어있음 + 진행중 아님)에만 활성
+  const actions = document.createElement('div');
+  actions.className = 'name-panel-actions';
+  const canShuffle = idx === 0 && Object.keys(state.picks).length === 0 && !isOrderedGameRunning(gameKey);
+  actions.innerHTML = `<button class="shuffle-btn" ${canShuffle ? '' : 'disabled'} onclick="shuffleOrderedGame('${gameKey}','${panelId}')">🎲 랜덤 섞기</button>`;
+  panel.appendChild(actions);
+}
+
+function shuffleOrderedGame(gameKey, panelId) {
+  if ((state[gameKey + 'OrderIdx'] || 0) > 0 || Object.keys(state.picks).length > 0) {
+    showToast('이미 게임이 시작됐어요');
+    return;
+  }
+  if (isOrderedGameRunning(gameKey)) return;
+  state[gameKey + 'Order'] = shuffle(state.attendingPool);
+  state[gameKey + 'OrderIdx'] = 0;
+  renderOrderedNamePanel(panelId, gameKey);
+  // 셔플 애니메이션
+  const items = document.querySelectorAll('#' + panelId + ' .name-item');
+  items.forEach((el, i) => {
+    el.style.animationDelay = (i * 0.03) + 's';
+    el.classList.add('shuffling');
+    setTimeout(() => el.classList.remove('shuffling'), 600 + i * 30);
+  });
+  // 첫 번째 차례 자동 활성화
+  setTimeout(() => activateNextOrderedTurn(gameKey), 520);
+}
+
+function activateNextOrderedTurn(gameKey) {
+  const order = state[gameKey + 'Order'];
+  const idx = state[gameKey + 'OrderIdx'] || 0;
+  if (!order || idx >= order.length) return;
+  const handler = ORDER_GAME_NAME_HANDLERS[gameKey];
+  if (handler) handler(order[idx]);
+}
+
 function renderTeamsPanel(panelId) {
   const panel = $(panelId);
   panel.innerHTML = '';
@@ -4070,22 +4160,27 @@ function launchDart() {
   };
   state.dartAimRunning = false;
   state.dartAimRaf = null;
-  renderNamePanel('dart-names', n => onDartName(n));
+  // 시작과 동시에 무작위 순서 결정 (농구슛과 동일)
+  state.dartOrder = shuffle(state.attendingPool);
+  state.dartOrderIdx = 0;
+  renderOrderedNamePanel('dart-names', 'dart');
   renderTeamsPanel('dart-teams');
   $('dart-current').textContent = '-';
   $('dart-result').className = 'dart-result';
-  $('dart-result').textContent = '왼쪽에서 자기 이름을 클릭하세요';
+  $('dart-result').textContent = '왼쪽 "랜덤 섞기"로 순서 다시 섞을 수 있어요';
   $('dart-throw').style.display = 'none';
   $('dart-stop').style.display = 'none';
   $('dart-tension').style.display = 'none';
   resetDartBoard();
   updateDartFullness();
+  // 첫 사람 자동 활성화
+  activateNextOrderedTurn('dart');
 }
 
 function onDartName(name) {
   state.currentPicker = name;
   $('dart-current').textContent = name;
-  renderNamePanel('dart-names', n => onDartName(n));
+  renderOrderedNamePanel('dart-names', 'dart');
   $('dart-throw').style.display = '';
   $('dart-throw').disabled = false;
   $('dart-stop').style.display = 'none';
@@ -4233,14 +4328,15 @@ function throwDart(fromPct, team) {
       $('dart-result').innerHTML = `<span style="color:${teamColor(team)}">${team}조!</span>`;
       setTimeout(() => {
         commitItemPick(team, 'dart-current', 'dart-teams');
-        renderNamePanel('dart-names', n => onDartName(n));
+        state.dartOrderIdx++;
+        renderOrderedNamePanel('dart-names', 'dart');
         $('dart-stop').style.display = 'none';
         $('dart-throw').style.display = 'none';
         updateDartFullness();
         resetDartBoard();
         $('dart-result').className = 'dart-result';
         if (isAllPicked()) finishGame();
-        else $('dart-result').textContent = '다음 사람이 자기 이름을 클릭해주세요';
+        else activateNextOrderedTurn('dart');
       }, 1500);
     }, 350);
   }, 720);
@@ -4259,22 +4355,27 @@ function launchClaw() {
   };
   state.clawMoveRunning = false;
   state.clawMoveRaf = null;
-  renderNamePanel('claw-names', n => onClawName(n));
+  // 시작과 동시에 무작위 순서 결정 (농구슛과 동일)
+  state.clawOrder = shuffle(state.attendingPool);
+  state.clawOrderIdx = 0;
+  renderOrderedNamePanel('claw-names', 'claw');
   renderTeamsPanel('claw-teams');
   $('claw-current').textContent = '-';
   $('claw-result').className = 'claw-result';
-  $('claw-result').textContent = '왼쪽에서 자기 이름을 클릭하세요';
+  $('claw-result').textContent = '왼쪽 "랜덤 섞기"로 순서 다시 섞을 수 있어요';
   $('claw-go').style.display = 'none';
   $('claw-stop').style.display = 'none';
   $('claw-tension').style.display = 'none';
   resetClawScene();
   updateClawPrizesFullness();
+  // 첫 사람 자동 활성화
+  activateNextOrderedTurn('claw');
 }
 
 function onClawName(name) {
   state.currentPicker = name;
   $('claw-current').textContent = name;
-  renderNamePanel('claw-names', n => onClawName(n));
+  renderOrderedNamePanel('claw-names', 'claw');
   $('claw-go').style.display = '';
   $('claw-go').disabled = false;
   $('claw-stop').style.display = 'none';
@@ -4401,14 +4502,15 @@ function stopClawMove() {
             $('claw-result').innerHTML = `<span style="color:${teamColor(chosen.team)}">${chosen.team}조!</span>`;
             setTimeout(() => {
               commitItemPick(chosen.team, 'claw-current', 'claw-teams');
-              renderNamePanel('claw-names', n => onClawName(n));
+              state.clawOrderIdx++;
+              renderOrderedNamePanel('claw-names', 'claw');
               $('claw-stop').style.display = 'none';
               $('claw-go').style.display = 'none';
               updateClawPrizesFullness();
               resetClawScene();
               $('claw-result').className = 'claw-result';
               if (isAllPicked()) finishGame();
-              else $('claw-result').textContent = '다음 사람이 자기 이름을 클릭해주세요';
+              else activateNextOrderedTurn('claw');
             }, 1500);
           }, 500);
         }, 600);
@@ -4430,19 +4532,24 @@ function launchMole() {
   };
   state.moleRunning = false;
   state.moleTimer = null;
-  renderNamePanel('mole-names', n => onMoleName(n));
+  // 시작과 동시에 무작위 순서 결정 (농구슛과 동일)
+  state.moleOrder = shuffle(state.attendingPool);
+  state.moleOrderIdx = 0;
+  renderOrderedNamePanel('mole-names', 'mole');
   renderTeamsPanel('mole-teams');
   $('mole-current').textContent = '-';
   $('mole-msg').className = 'mole-msg';
-  $('mole-msg').textContent = '왼쪽에서 자기 이름을 클릭하세요';
+  $('mole-msg').textContent = '왼쪽 "랜덤 섞기"로 순서 다시 섞을 수 있어요';
   $('mole-tension').style.display = 'none';
   resetMoleHoles();
+  // 첫 사람 자동 활성화
+  activateNextOrderedTurn('mole');
 }
 
 function onMoleName(name) {
   state.currentPicker = name;
   $('mole-current').textContent = name;
-  renderNamePanel('mole-names', n => onMoleName(n));
+  renderOrderedNamePanel('mole-names', 'mole');
   $('mole-msg').className = 'mole-msg';
   $('mole-msg').textContent = `${name}님, 빠르게 두더지를 클릭하세요!`;
   $('mole-tension').style.display = '';
@@ -4541,11 +4648,12 @@ function onMoleClick(m, ev) {
   $('mole-msg').innerHTML = `<span style="color:${teamColor(team)}">${team}조!</span>`;
   setTimeout(() => {
     commitItemPick(team, 'mole-current', 'mole-teams');
-    renderNamePanel('mole-names', n => onMoleName(n));
+    state.moleOrderIdx++;
+    renderOrderedNamePanel('mole-names', 'mole');
     resetMoleHoles();
     $('mole-msg').className = 'mole-msg';
     if (isAllPicked()) finishGame();
-    else $('mole-msg').textContent = '다음 사람이 자기 이름을 클릭해주세요';
+    else activateNextOrderedTurn('mole');
   }, 1500);
 }
 
@@ -4563,22 +4671,27 @@ function launchArchery() {
   state.archeryPower = 0;
   state.archeryPowerRunning = false;
   state.archeryPowerRaf = null;
-  renderNamePanel('archery-names', n => onArcheryName(n));
+  // 시작과 동시에 무작위 순서 결정 (농구슛과 동일)
+  state.archeryOrder = shuffle(state.attendingPool);
+  state.archeryOrderIdx = 0;
+  renderOrderedNamePanel('archery-names', 'archery');
   renderTeamsPanel('archery-teams');
   $('archery-current').textContent = '-';
   $('archery-result').className = 'archery-result';
-  $('archery-result').textContent = '왼쪽에서 자기 이름을 클릭하세요';
+  $('archery-result').textContent = '왼쪽 "랜덤 섞기"로 순서 다시 섞을 수 있어요';
   $('archery-shoot').style.display = 'none';
   $('archery-release').style.display = 'none';
   $('archery-tension').style.display = 'none';
   $('archery-power-fill').style.width = '0%';
   resetArcheryArrows();
+  // 첫 사람 자동 활성화
+  activateNextOrderedTurn('archery');
 }
 
 function onArcheryName(name) {
   state.currentPicker = name;
   $('archery-current').textContent = name;
-  renderNamePanel('archery-names', n => onArcheryName(n));
+  renderOrderedNamePanel('archery-names', 'archery');
   $('archery-shoot').style.display = '';
   $('archery-shoot').disabled = false;
   $('archery-release').style.display = 'none';
@@ -4697,12 +4810,13 @@ function releaseArchery() {
       $('archery-power-fill').style.width = '0%';
       setTimeout(() => {
         commitItemPick(chosenTeam, 'archery-current', 'archery-teams');
-        renderNamePanel('archery-names', n => onArcheryName(n));
+        state.archeryOrderIdx++;
+        renderOrderedNamePanel('archery-names', 'archery');
         $('archery-shoot').style.display = 'none';
         $('archery-release').style.display = 'none';
         $('archery-result').className = 'archery-result';
         if (isAllPicked()) finishGame();
-        else $('archery-result').textContent = '다음 사람이 자기 이름을 클릭해주세요';
+        else activateNextOrderedTurn('archery');
       }, 1500);
     }, 350);
   }, 720);
@@ -4717,4 +4831,3 @@ window.addEventListener('DOMContentLoaded', () => {
 </script>
 </body>
 </html>
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          
