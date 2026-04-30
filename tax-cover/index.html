@@ -228,11 +228,41 @@
         .income-rate-negative { color: var(--danger); font-weight: 700; }
 
         /* 신고유형 행 */
-        .type-row td { background: #f8f9fa; }
+        .type-row td { background: #f8f9fa; position: relative; }
         .type-select {
             width: 100%; border: 1px solid var(--border) !important;
             background: #fff !important; border-radius: 5px;
         }
+
+        /* 자동 판단 표시 */
+        .auto-mark {
+            position: absolute;
+            top: 2px;
+            right: 4px;
+            font-size: 9px;
+            color: #2563eb;
+            background: #dbeafe;
+            padding: 1px 5px;
+            border-radius: 3px;
+            font-weight: 600;
+            pointer-events: none;
+        }
+
+        /* 가산세/세액공제 자동 안내 박스 */
+        .book-exp-info {
+            margin-top: 4px;
+            font-size: 10px;
+            line-height: 1.45;
+            color: #475569;
+        }
+        .book-exp-info:empty { display: none; }
+        .book-exp-info .info-line {
+            display: block;
+            padding: 1px 0;
+        }
+        .book-exp-info .info-ok    { color: #059669; }
+        .book-exp-info .info-warn  { color: #d97706; }
+        .book-exp-info .info-alert { color: #dc2626; }
 
         /* 세율 + 추계 나란히 */
         .bottom-tables-area {
@@ -325,58 +355,67 @@
         .bizcode-item .biz-detail { color: #374151; }
 
         @media print {
-    /* 1. 절대 인쇄되면 안 되는 요소들 (강제 삭제) */
-    .admin-bar, 
-    .no-print, 
-    button, 
-    nav, 
-    .menu-container,
-    [class*="admin"] { 
-        display: none !important; 
-    }
+            /* 1. 절대 인쇄되면 안 되는 요소들 (강제 삭제) */
+            .admin-bar,
+            .no-print,
+            button,
+            nav,
+            .menu-container,
+            [class*="admin"] {
+                display: none !important;
+            }
 
-    /* 2. 한 페이지에 꽉 차게 들어오도록 설정 */
-    body { 
-        zoom: 100% !important; /* 화면의 125% 설정을 인쇄 시 100%로 해제 */
-        padding: 0 !important; 
-        margin: 0 !important; 
-    }
+            /* 2. 한 페이지에 꽉 차게 들어오도록 설정 */
+            html, body {
+                zoom: 100% !important;
+                padding: 0 !important;
+                margin: 0 !important;
+                height: auto !important;
+            }
 
-    .container { 
-        width: 100% !important; 
-        max-width: none !important; 
-        padding: 0 !important;
-        box-shadow: none !important;
-    }
+            .container {
+                width: 100% !important;
+                max-width: none !important;
+                padding: 0 !important;
+                box-shadow: none !important;
+            }
 
-    .report-card {
-        height: auto !important;
-        page-break-inside: avoid; /* 중간에 잘리지 않게 함 */
-    }
+            .report-card {
+                height: auto !important;
+                page-break-inside: avoid;
+                page-break-after: avoid;
+            }
 
-    .file-margin { 
-        height: 20mm !important; /* 여백이 너무 크면 한 장을 넘어갈 수 있어 10mm로 조정 */
-    }
-}
-        }
-            .report-header { padding: 10px; font-size: 18pt; color: #1e293b; background: #fff; border-bottom: none; -webkit-print-color-adjust: exact; print-color-adjust: exact; flex-shrink: 0; }
-            .info-grid { padding: 6px 8px; gap: 10px; flex-shrink: 0; align-items: stretch; border-bottom: none; }
+            /* 위쪽 살짝 여백 (원본 느낌 유지) */
+            .file-margin {
+                height: 10mm !important;
+            }
+
+            .report-header { padding: 8px 16px; font-size: 17pt; color: #1e293b; background: #fff; border-bottom: none; -webkit-print-color-adjust: exact; print-color-adjust: exact; flex-shrink: 0; }
+            .info-grid { padding: 5px 10px; gap: 12px; flex-shrink: 0; align-items: stretch; border-bottom: none; }
             .info-grid > div:last-child { display: flex; flex-direction: column; }
             .info-grid > div:last-child .input-row:last-child { flex: 1; min-height: 0; }
-            .info-grid > div:last-child .input-row:last-child textarea { height: 100%; min-height: 28px; resize: none; }
+            .info-grid > div:last-child .input-row:last-child textarea { height: 100%; min-height: 24px; resize: none; }
+            .input-group { gap: 3px !important; }
             input, select, textarea { font-size: 9px; padding: 2px 4px; }
-            .table-wrap { flex-shrink: 0; margin-top: 5mm; }
-            .main-table th { padding: 4px 5px; font-size: 9px; }
+            .table-wrap { flex-shrink: 0; margin-top: 4mm; }
+            .main-table th { padding: 3px 5px; font-size: 9px; }
             .main-table td { padding: 2px 5px; }
             .num-input { font-size: 9px; }
-            .bottom-tables-area { display: flex; flex: 1; align-items: stretch; margin-top: 5mm; }
+            .type-row td { padding: 1.5px 5px; }
+            .type-select { font-size: 9px; padding: 1px 4px; }
+            .auto-mark { font-size: 8px; padding: 0 4px; top: 1px; right: 2px; }
+            .book-exp-info { font-size: 8.5px; line-height: 1.3; margin-top: 2px; }
+            .book-exp-info .info-line { padding: 0; }
+            .bottom-tables-area { display: flex; flex: 1; align-items: stretch; margin-top: 4mm; }
             .guide-table-area { padding: 4px 8px; flex: 1; display: flex; flex-direction: column; }
             .guide-table { flex: 1; }
             .guide-table th, .guide-table td { padding: 2px 3px; font-size: 7.5px; }
             .rate-table-area { padding: 4px 8px; border-right: 1px solid #aaa; flex-shrink: 0; display: flex; flex-direction: column; }
             .rate-ref-table th, .rate-ref-table td { padding: 2px 6px; font-size: 8.5px; }
-            .approval-area { padding: 4px 8px; flex-shrink: 0; }
-            .approval-table .ap-body { height: 28px; }
+            .approval-area { padding: 3px 8px; flex-shrink: 0; }
+            .approval-title { font-size: 11px !important; margin-bottom: 3px !important; }
+            .approval-table .ap-body { height: 22px; }
             .pay-label, .pay-val { font-size: 10px !important; }
             @page { size: A4 portrait; margin: 8mm 8mm 8mm 8mm; }
         }
@@ -442,7 +481,7 @@
                 <!-- 개업일 -->
                 <div class="input-row">
                     <span class="label">개업일</span>
-                    <input type="text" id="openDate" placeholder="예) 2020.01.01" oninput="formatOpenDate(this)" maxlength="12">
+                    <input type="text" id="openDate" placeholder="예) 2020.01.01" oninput="formatOpenDate(this); recalcBookExp();" maxlength="12">
                 </div>
                 <!-- 업종코드 + 자동입력 -->
                 <div class="code-row">
@@ -522,6 +561,14 @@
                         <span class="vat-note">%</span>
                     </div>
                 </div>
+                <!-- 연말정산 사업소득만 (무기장가산세 면제 사유) -->
+                <div class="input-row">
+                    <span class="label">연말정산</span>
+                    <label style="display:flex;align-items:center;gap:6px;font-size:11px;color:#475569;cursor:pointer;">
+                        <input type="checkbox" id="yearEndOnly" onchange="recalcBookExp()" style="cursor:pointer;">
+                        <span>연말정산 사업소득만 있음</span>
+                    </label>
+                </div>
                 <!-- 특이사항 -->
                 <div class="input-row" style="align-items:flex-start;flex:1;min-height:0;">
                     <span class="label" style="padding-top:4px;">특이사항</span>
@@ -545,10 +592,10 @@
                     <tr>
                         <td class="col-label" style="border-right:2px solid #94a3b8;">수입금액</td>
                         <td class="col-2024" style="border-right:2px solid #94a3b8;">
-                            <input type="text" class="num-input" id="rev24" oninput="formatComma(this); calcAll()" onkeydown="handlePlusKey(event, this)">
+                            <input type="text" class="num-input" id="rev24" oninput="formatComma(this); calcAll(); recalcBookExp();" onkeydown="handlePlusKey(event, this)">
                         </td>
                         <td class="col-2025">
-                            <input type="text" class="num-input" id="rev25" oninput="formatComma(this); calcAll()" onkeydown="handlePlusKey(event, this)">
+                            <input type="text" class="num-input" id="rev25" oninput="formatComma(this); calcAll(); recalcBookExp();" onkeydown="handlePlusKey(event, this)">
                         </td>
                     </tr>
                     <!-- 필요경비 -->
@@ -663,6 +710,49 @@
                                 <option>단순경비율</option>
                                 <option>성실신고확인</option>
                             </select>
+                        </td>
+                    </tr>
+                    <!-- 기장의무판단 (신규) -->
+                    <tr class="type-row">
+                        <td class="col-label" style="border-right:2px solid #94a3b8; font-size:11.5px;">기장의무판단</td>
+                        <td style="border-right:2px solid #94a3b8;">
+                            <select id="book24" class="type-select" onchange="onBookManualChange(24)">
+                                <option value="">선택</option>
+                                <option>복식부기</option>
+                                <option>간편장부</option>
+                                <option>성실신고확인대상</option>
+                            </select>
+                        </td>
+                        <td>
+                            <select id="book25" class="type-select" onchange="onBookManualChange(25)">
+                                <option value="">선택</option>
+                                <option>복식부기</option>
+                                <option>간편장부</option>
+                                <option>성실신고확인대상</option>
+                            </select>
+                            <span id="book25AutoMark" class="auto-mark" style="display:none;">자동</span>
+                        </td>
+                    </tr>
+                    <!-- 경비율판단 (신규) -->
+                    <tr class="type-row">
+                        <td class="col-label" style="border-right:2px solid #94a3b8; font-size:11.5px;">경비율판단</td>
+                        <td style="border-right:2px solid #94a3b8;">
+                            <select id="expCat24" class="type-select" onchange="onExpCatManualChange(24)">
+                                <option value="">선택</option>
+                                <option>단순경비율</option>
+                                <option>기준경비율</option>
+                                <option>해당없음</option>
+                            </select>
+                        </td>
+                        <td>
+                            <select id="expCat25" class="type-select" onchange="onExpCatManualChange(25)">
+                                <option value="">선택</option>
+                                <option>단순경비율</option>
+                                <option>기준경비율</option>
+                                <option>해당없음</option>
+                            </select>
+                            <span id="expCat25AutoMark" class="auto-mark" style="display:none;">자동</span>
+                            <div id="bookExpInfo" class="book-exp-info"></div>
                         </td>
                     </tr>
                 </tbody>
@@ -867,15 +957,351 @@ function shiftYear() {
     const type25 = document.getElementById('type25');
     const type24 = document.getElementById('type24');
     if (type25 && type24) type24.value = type25.value;
+    // 기장의무판단·경비율판단 이월 (당해 → 전년)
+    const book25 = document.getElementById('book25');
+    const book24 = document.getElementById('book24');
+    if (book25 && book24) book24.value = book25.value;
+    const expCat25 = document.getElementById('expCat25');
+    const expCat24 = document.getElementById('expCat24');
+    if (expCat25 && expCat24) expCat24.value = expCat25.value;
     // 당해 필드 초기화
     ['rev25','exp25','inc25','base25','rate25','tax25','pre25','ded25','final25'].forEach(id => {
         const el = document.getElementById(id);
         if (el) el.value = '';
     });
     if (curr25) curr25.textContent = '-';
+    // 당해 기장의무·경비율판단 초기화 (이후 자동 재계산)
+    if (book25) book25.value = '';
+    if (expCat25) expCat25.value = '';
+    _bookManuallyChanged = false;
+    _expCatManuallyChanged = false;
+    const bookMark = document.getElementById('book25AutoMark');
+    const expMark = document.getElementById('expCat25AutoMark');
+    if (bookMark) bookMark.style.display = 'none';
+    if (expMark) expMark.style.display = 'none';
     yearPrev += 1;
     yearCurr += 1;
     applyYears();
+    // 이월 후 자동 재계산
+    if (typeof recalcBookExp === 'function') recalcBookExp();
+}
+
+// ============================================================
+// 기장의무판단 / 경비율판단 자동 로직 (국세청 기준)
+// ============================================================
+
+// 업종군 매핑 (industry 텍스트 → 가/나/다)
+// 가군: 농·임·어, 광업, 도매및소매업, 부동산매매업
+// 나군: 제조, 숙박음식, 전기가스, 수도하수폐기물, 건설, 운수창고, 정보통신, 금융보험 (욕탕업·상품중개 포함)
+// 다군: 부동산임대·부동산업(매매제외), 전문과학기술, 사업서비스, 교육, 보건사회복지, 예술스포츠여가, 협회개인서비스, 가구내고용
+const INDUSTRY_GROUP_MAP = {
+    '농업, 임업 및 어업': '가',
+    '광업': '가',
+    '도매 및 소매업': '가',
+    '제조업': '나',
+    '숙박 및 음식점업': '나',
+    '전기, 가스, 증기 및 공기조절 공급업': '나',
+    '수도, 하수 및 폐기물처리, 원료재생업': '나',
+    '건설업': '나',
+    '운수 및 창고업': '나',
+    '정보통신업': '나',
+    '금융 및 보험업': '나',
+    '부동산업': '다', // 부동산매매업은 따로 처리(가군). 일반 부동산업은 다군
+    '전문, 과학 및 기술서비스업': '다',
+    '사업시설 관리, 사업지원 및 임대 서비스업': '다',
+    '교육서비스업': '다',
+    '보건업 및 사회복지 서비스업': '다',
+    '예술, 스포츠 및 여가관련 서비스업': '다',
+    '협회 및 단체, 수리 및 기타 개인서비스업': '다',
+    '가구 내 고용활동 및 달리 분류되지 않은 자가 소비 생산활동': '다',
+    '공공 행정, 국방 및 사회보장 행정': '다'
+};
+
+// 전문직사업자 코드 (직전연도 수입금액 무관 → 복식부기의무자)
+const PROFESSIONAL_CODES = new Set([
+    // 의료업 851101~851219, 851901
+    '851101','851102','851103','851104','851105','851106','851107','851108','851109','851110',
+    '851111','851112','851113','851114','851115','851116','851117','851118','851119','851120',
+    '851121','851122','851123','851124','851125','851126','851127','851128','851129','851130',
+    '851201','851202','851203','851204','851205','851206','851207','851208','851209','851210',
+    '851211','851212','851213','851214','851215','851216','851217','851218','851219','851901',
+    // 수의업
+    '852000',
+    // (한)약사업
+    '523111','523114',
+    // 변호사
+    '741101',
+    // 변리사
+    '741104',
+    // 법무사
+    '741107',
+    // 공인노무사
+    '741110',
+    // 세무사·회계사
+    '741201','741202','741203','741204',
+    // 경영지도사
+    '741401',
+    // 통관업
+    '749906',
+    // 기술지도사
+    '742202',
+    // 감정평가사
+    '702002',
+    // 손해사정인
+    '749904',
+    // 기술사
+    '742106',
+    // 건축사
+    '742105',
+    // 도선사
+    '630403',
+    // 측량사
+    '742101','742102'
+]);
+
+// 업종코드 → 업종군 판별
+function getBizGroup(bizCode) {
+    if (!bizCode) return null;
+    const code = String(bizCode).trim();
+    const data = (typeof EXPENSE_RATES !== 'undefined') ? EXPENSE_RATES[code] : null;
+    if (!data) return null;
+
+    const industry = data.industry || '';
+    const sub = data.sub || '';
+    const detail = data.detail || '';
+
+    // 부동산매매업은 가군 (industry 분류로는 부동산업이지만 매매업은 가군)
+    if (industry === '부동산업') {
+        if (sub.includes('부동산매매') || detail.includes('부동산매매') ||
+            sub.includes('주거용 건물 개발') || detail.includes('주거용 건물 개발')) {
+            // 부동산매매업·주거용 건물 개발/공급업은 가군 또는 나군
+            // 주거용 건물 개발 및 공급업은 나군
+            if (sub.includes('주거용 건물 개발') || detail.includes('주거용 건물 개발')) return '나';
+            return '가';
+        }
+        return '다'; // 부동산임대업 등 일반 부동산업은 다군
+    }
+
+    return INDUSTRY_GROUP_MAP[industry] || null;
+}
+
+// 전문직사업자 여부
+function isProfessional(bizCode) {
+    if (!bizCode) return false;
+    return PROFESSIONAL_CODES.has(String(bizCode).trim());
+}
+
+// 인적용역 여부 (업종코드 940xxx 또는 94xxxx) - 다군 단순경비율 직전연도 기준 3,600만원
+function isPersonalService(bizCode) {
+    if (!bizCode) return false;
+    const code = String(bizCode).trim();
+    return /^94\d{4}$/.test(code);
+}
+
+// 신규사업자 여부 (개업일이 당해 연도)
+function isNewBusiness() {
+    const od = (document.getElementById('openDate').value || '').trim();
+    if (!od) return false;
+    const m = od.match(/^(\d{4})/);
+    if (!m) return false;
+    const openYear = parseInt(m[1], 10);
+    return openYear === yearCurr;
+}
+
+// 기장의무판단 자동 결정
+// 반환: '복식부기' / '간편장부' / '성실신고확인대상' / null
+function judgeBookkeeping() {
+    const bizCode = (document.getElementById('bizCode').value || '').trim();
+    const rev24 = n('rev24');
+
+    // 1) 전문직사업자 → 무조건 복식부기 (성실신고 기준은 별도)
+    if (isProfessional(bizCode)) {
+        // 전문직도 성실신고확인대상 기준 적용 (직전연도 수입금액)
+        const grp = getBizGroup(bizCode) || '다'; // 전문직은 보통 다군
+        if (grp === '가' && rev24 >= 1500000000) return '성실신고확인대상';
+        if (grp === '나' && rev24 >= 750000000)  return '성실신고확인대상';
+        if (grp === '다' && rev24 >= 500000000)  return '성실신고확인대상';
+        return '복식부기';
+    }
+
+    const group = getBizGroup(bizCode);
+    if (!group) return null; // 업종 미선택
+
+    // 2) 신규사업자 → 간편장부 (단, 성실신고 기준은 적용 안 함, 직전연도 없음)
+    if (isNewBusiness() && rev24 === 0) {
+        return '간편장부';
+    }
+
+    // 3) 일반: 직전연도 수입금액으로 판단
+    if (group === '가') {
+        if (rev24 >= 1500000000) return '성실신고확인대상';
+        if (rev24 >= 300000000)  return '복식부기';
+        return '간편장부';
+    }
+    if (group === '나') {
+        if (rev24 >= 750000000) return '성실신고확인대상';
+        if (rev24 >= 150000000) return '복식부기';
+        return '간편장부';
+    }
+    if (group === '다') {
+        if (rev24 >= 500000000) return '성실신고확인대상';
+        if (rev24 >= 75000000)  return '복식부기';
+        return '간편장부';
+    }
+    return null;
+}
+
+// 경비율판단 자동 결정
+// 반환: '단순경비율' / '기준경비율' / '해당없음' / null
+function judgeExpenseCategory(bookResult) {
+    const bizCode = (document.getElementById('bizCode').value || '').trim();
+    if (!bookResult) return null;
+
+    // 복식부기·성실신고면 추계 자체가 가산세 대상 → '해당없음'으로 표시
+    if (bookResult === '복식부기' || bookResult === '성실신고확인대상') return '해당없음';
+
+    const group = getBizGroup(bizCode);
+    if (!group) return null;
+
+    const rev24 = n('rev24');
+    const rev25 = n('rev25');
+    const isNew = isNewBusiness();
+
+    // 단순경비율 기준 (직전연도, 인적용역 다군은 3,600만원)
+    let simplePrev;
+    if (group === '가') simplePrev = 60000000;
+    else if (group === '나') simplePrev = 36000000;
+    else simplePrev = isPersonalService(bizCode) ? 36000000 : 24000000;
+
+    // 복식부기의무자 기준 (당해연도 기준 = 단순경비율 당해 한도)
+    let bookThreshold;
+    if (group === '가') bookThreshold = 300000000;
+    else if (group === '나') bookThreshold = 150000000;
+    else bookThreshold = 75000000;
+
+    // 단순경비율 충족 조건:
+    // 신규사업자: 당해 < 복식부기의무자 기준
+    // 계속사업자: 직전 < 단순경비율 기준 AND 당해 < 복식부기의무자 기준
+    let simpleOk;
+    if (isNew) {
+        simpleOk = (rev25 < bookThreshold);
+    } else {
+        simpleOk = (rev24 < simplePrev) && (rev25 < bookThreshold);
+    }
+
+    return simpleOk ? '단순경비율' : '기준경비율';
+}
+
+// 자동 판단 결과를 셀렉트에 반영 + 안내 메시지 갱신
+// 사용자가 수동으로 변경한 적 있으면 확인 팝업
+let _bookManuallyChanged = false;
+let _expCatManuallyChanged = false;
+
+function onBookManualChange(yr) {
+    if (yr === 25) _bookManuallyChanged = true;
+    updateBookExpInfo();
+}
+function onExpCatManualChange(yr) {
+    if (yr === 25) _expCatManuallyChanged = true;
+    updateBookExpInfo();
+}
+
+function recalcBookExp() {
+    const autoBook = judgeBookkeeping();
+    const autoExp  = judgeExpenseCategory(autoBook);
+
+    const book25El = document.getElementById('book25');
+    const expCat25El = document.getElementById('expCat25');
+    const bookMark = document.getElementById('book25AutoMark');
+    const expMark  = document.getElementById('expCat25AutoMark');
+
+    // book25 처리
+    if (autoBook) {
+        if (_bookManuallyChanged && book25El.value && book25El.value !== autoBook) {
+            // 사용자 수동값과 자동값 다르면 확인
+            if (confirm(`기장의무판단 자동값(${autoBook})과 현재 선택(${book25El.value})이 다릅니다.\n자동값으로 변경하시겠습니까?`)) {
+                book25El.value = autoBook;
+                _bookManuallyChanged = false;
+                if (bookMark) bookMark.style.display = 'inline-block';
+            }
+        } else if (!_bookManuallyChanged) {
+            book25El.value = autoBook;
+            if (bookMark) bookMark.style.display = 'inline-block';
+        }
+    }
+
+    // expCat25 처리
+    if (autoExp) {
+        if (_expCatManuallyChanged && expCat25El.value && expCat25El.value !== autoExp) {
+            if (confirm(`경비율판단 자동값(${autoExp})과 현재 선택(${expCat25El.value})이 다릅니다.\n자동값으로 변경하시겠습니까?`)) {
+                expCat25El.value = autoExp;
+                _expCatManuallyChanged = false;
+                if (expMark) expMark.style.display = 'inline-block';
+            }
+        } else if (!_expCatManuallyChanged) {
+            expCat25El.value = autoExp;
+            if (expMark) expMark.style.display = 'inline-block';
+        }
+    }
+
+    updateBookExpInfo();
+}
+
+// 안내 메시지 (가산세 면제·기장세액공제·복식부기의무자 추계신고 경고)
+function updateBookExpInfo() {
+    const infoEl = document.getElementById('bookExpInfo');
+    if (!infoEl) return;
+    const lines = [];
+
+    const book25Val = (document.getElementById('book25').value || '').trim();
+    const expCat25Val = (document.getElementById('expCat25').value || '').trim();
+    const type25Val = (document.getElementById('type25').value || '').trim();
+    const rev24 = n('rev24');
+    const yearEndOnly = document.getElementById('yearEndOnly').checked;
+    const isNew = isNewBusiness();
+
+    // 무기장가산세 면제 (간편장부대상자만 의미 있음)
+    if (book25Val === '간편장부') {
+        const reasons = [];
+        if (isNew) reasons.push('신규사업자');
+        if (rev24 > 0 && rev24 < 48000000) reasons.push('직전 4,800만원 미만');
+        if (yearEndOnly) reasons.push('연말정산 사업소득만');
+        if (reasons.length > 0) {
+            lines.push(`<span class="info-line info-ok">✓ 무기장가산세 면제 (${reasons.join(' · ')})</span>`);
+        }
+    }
+
+    // 기장세액공제 (간편장부대상자가 복식부기로 신고)
+    if (book25Val === '간편장부' &&
+        (type25Val === '복식부기-외부조정' || type25Val === '복식부기-내부조정')) {
+        lines.push('<span class="info-line info-ok">✓ 기장세액공제 대상 (산출세액×20%, 한도 100만원)</span>');
+    }
+
+    // 복식부기의무자 추계신고 시 가산세 경고
+    if ((book25Val === '복식부기' || book25Val === '성실신고확인대상') &&
+        (type25Val === '단순경비율' || type25Val === '기준경비율')) {
+        lines.push('<span class="info-line info-alert">⚠ 복식부기의무자 추계신고 시 가산세 적용</span>');
+        lines.push('<span class="info-line info-alert" style="padding-left:14px;">(①무신고 납부세액×20% / ②수입금액×7/10000 / ③산출세액×무기장비율×20% 중 큰 금액)</span>');
+    }
+
+    // 간편장부대상자 추계신고 시 무기장가산세 (면제 대상 제외)
+    if (book25Val === '간편장부' &&
+        (type25Val === '단순경비율' || type25Val === '기준경비율')) {
+        const exempt = isNew || (rev24 > 0 && rev24 < 48000000) || yearEndOnly;
+        if (!exempt) {
+            lines.push('<span class="info-line info-warn">⚠ 간편장부대상자 추계신고 시 무기장가산세 (산출세액×무기장비율×20%)</span>');
+        }
+    }
+
+    infoEl.innerHTML = lines.join('');
+}
+
+// type25(신고유형) 변경 시에도 안내 갱신
+function hookTypeChange() {
+    const t25 = document.getElementById('type25');
+    if (t25) t25.addEventListener('change', updateBookExpInfo);
+    const t24 = document.getElementById('type24');
+    if (t24) t24.addEventListener('change', updateBookExpInfo);
 }
 
 // ─── 계산 ────────────────────────────────────────────────────
@@ -1006,6 +1432,8 @@ function applyBizCode(code) {
     if (info.simple_rate > 0) {
         document.getElementById('stdIncomeRate').value = (100 - info.simple_rate).toFixed(1);
     }
+    // 업종코드 변경 → 기장의무판단/경비율판단 자동 재계산
+    if (typeof recalcBookExp === 'function') recalcBookExp();
 }
 
 function handleBizCodeKey(e) {
@@ -1088,7 +1516,11 @@ function saveData() {
 
     const data = {};
     document.querySelectorAll('input[id], select[id], textarea[id]').forEach(el => {
-        data[el.id] = el.value;
+        if (el.type === 'checkbox') {
+            data[el.id] = el.checked ? '1' : '';
+        } else {
+            data[el.id] = el.value;
+        }
     });
     // save rate hint
     data['_bizCodeHint'] = document.getElementById('bizCodeHint').textContent;
@@ -1096,6 +1528,9 @@ function saveData() {
     data['_yearCurr'] = yearCurr;
     // 담당자 저장
     data['_manager'] = document.getElementById('managerSelect').value;
+    // 기장의무판단·경비율판단 수동 변경 플래그
+    data['_bookManual'] = _bookManuallyChanged ? '1' : '';
+    data['_expCatManual'] = _expCatManuallyChanged ? '1' : '';
 
     let clients = JSON.parse(localStorage.getItem('taxClients') || '{}');
     clients[name] = data;
@@ -1107,10 +1542,22 @@ function saveData() {
 
 function loadClientData(name) {
     if (!name) {
-        document.querySelectorAll('input[id], textarea[id]').forEach(i => {
-            if (!i.readOnly) i.value = '';
+        document.querySelectorAll('input[id], select[id], textarea[id]').forEach(i => {
+            if (i.type === 'checkbox') {
+                i.checked = false;
+            } else if (!i.readOnly) {
+                i.value = '';
+            }
         });
         document.getElementById('bizCodeHint').style.display = 'none';
+        const bookMark = document.getElementById('book25AutoMark');
+        const expMark = document.getElementById('expCat25AutoMark');
+        if (bookMark) bookMark.style.display = 'none';
+        if (expMark) expMark.style.display = 'none';
+        const infoEl = document.getElementById('bookExpInfo');
+        if (infoEl) infoEl.innerHTML = '';
+        _bookManuallyChanged = false;
+        _expCatManuallyChanged = false;
         return;
     }
 
@@ -1119,9 +1566,15 @@ function loadClientData(name) {
     if (!data) return;
 
     for (let key in data) {
-        if (key === '_bizCodeHint') continue;
+        if (key === '_bizCodeHint' || key === '_yearPrev' || key === '_yearCurr' ||
+            key === '_manager' || key === '_bookManual' || key === '_expCatManual') continue;
         const el = document.getElementById(key);
-        if (el) el.value = data[key];
+        if (!el) continue;
+        if (el.type === 'checkbox') {
+            el.checked = (data[key] === '1' || data[key] === true);
+        } else {
+            el.value = data[key];
+        }
     }
     if (data['_bizCodeHint']) {
         const hint = document.getElementById('bizCodeHint');
@@ -1133,7 +1586,17 @@ function loadClientData(name) {
     if (data['_manager'] !== undefined) {
         document.getElementById('managerSelect').value = data['_manager'] || '';
     }
+    // 수동 변경 플래그 복원
+    _bookManuallyChanged = (data['_bookManual'] === '1');
+    _expCatManuallyChanged = (data['_expCatManual'] === '1');
+    // 자동 마크 표시 (수동이 아니고 값이 있는 경우)
+    const bookMark = document.getElementById('book25AutoMark');
+    const expMark = document.getElementById('expCat25AutoMark');
+    if (bookMark) bookMark.style.display = (!_bookManuallyChanged && document.getElementById('book25').value) ? 'inline-block' : 'none';
+    if (expMark) expMark.style.display = (!_expCatManuallyChanged && document.getElementById('expCat25').value) ? 'inline-block' : 'none';
+
     calcAll();
+    updateBookExpInfo();
 }
 
 function deleteData() {
@@ -1673,6 +2136,11 @@ function matchRateTableHeight() {
 }
 window.addEventListener('load', matchRateTableHeight);
 window.addEventListener('resize', matchRateTableHeight);
+
+// 페이지 로드 시 신고유형(type24/type25) 변경에 안내 갱신 훅 연결
+window.addEventListener('load', function() {
+    if (typeof hookTypeChange === 'function') hookTypeChange();
+});
 </script>
 </body>
 </html>
