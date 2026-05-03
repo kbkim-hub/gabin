@@ -4454,7 +4454,7 @@ function startClawMove() {
 
   const arm = $('claw-arm');
   arm.style.transition = 'none';
-  const period = 1020;
+  const period = 1700;
   const tick = (now) => {
     if (!state.clawMoveRunning) return;
     const t = ((now - state.clawMoveStart) % period) / period;
