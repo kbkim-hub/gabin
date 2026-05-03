@@ -1773,18 +1773,7 @@ body {
   border-radius: 50% 50% 8px 8px / 30% 30% 8px 8px;
   z-index: 0;
 }
-.claw-chute {
-  position: absolute;
-  bottom: 12%;
-  right: 5%;
-  width: 14%;
-  height: 12%;
-  background: linear-gradient(180deg, #1a0a0a 0%, #000 100%);
-  border: 3px solid #ffd84d;
-  border-radius: 4px 4px 12px 12px;
-  z-index: 3;
-  box-shadow: inset 0 4px 8px rgba(0,0,0,0.7);
-}
+
 .claw-result {
   position: absolute;
   bottom: 1.5%;
@@ -2261,6 +2250,80 @@ body {
   gap: 12px;
   justify-content: center;
 }
+
+/* ── 캡슐 선택 오버레이 ── */
+.capsule-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(8,6,22,0.93);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  animation: fadeIn 0.25s ease;
+  backdrop-filter: blur(6px);
+  padding: 20px;
+}
+.capsule-title {
+  font-family: 'Black Han Sans', sans-serif;
+  font-size: 20px;
+  color: #ffd84d;
+  margin-bottom: 20px;
+  text-shadow: 0 0 16px rgba(255,216,77,0.6);
+  letter-spacing: 0.06em;
+}
+.capsule-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  justify-content: center;
+  max-width: 88%;
+}
+.capsule-item {
+  width: 62px;
+  height: 62px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 32%, #eaeaf8 0%, #aaaacc 45%, #666688 100%);
+  border: 2px solid rgba(255,255,255,0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Black Han Sans', sans-serif;
+  font-size: 22px;
+  font-weight: 900;
+  color: #fff;
+  cursor: pointer;
+  box-shadow: 0 4px 14px rgba(0,0,0,0.55), inset 0 2px 5px rgba(255,255,255,0.35);
+  transition: transform 0.15s, box-shadow 0.15s, opacity 0.3s;
+  animation: capsule-in 0.4s cubic-bezier(0.2,0.8,0.2,1.3) var(--cap-delay,0s) both;
+  user-select: none;
+  text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+}
+.capsule-item:hover:not(.opened):not(.dimmed) {
+  transform: scale(1.14) translateY(-4px);
+  box-shadow: 0 8px 22px rgba(255,216,77,0.45), inset 0 2px 5px rgba(255,255,255,0.35);
+}
+@keyframes capsule-in {
+  from { transform: scale(0) rotate(-90deg); opacity: 0; }
+  to   { transform: scale(1) rotate(0deg);   opacity: 1; }
+}
+.capsule-item.opened {
+  cursor: default;
+  animation: capsule-open 0.5s cubic-bezier(0.2,0.8,0.2,1.4) forwards;
+  border-color: rgba(255,255,255,0.8);
+}
+@keyframes capsule-open {
+  0%   { transform: scale(1); }
+  40%  { transform: scale(1.55) rotate(12deg); filter: brightness(1.4); }
+  70%  { transform: scale(1.2) rotate(-5deg); }
+  100% { transform: scale(1.18); }
+}
+.capsule-item.dimmed {
+  opacity: 0.22;
+  cursor: default;
+  pointer-events: none;
+}
 /* responsive scaling for small screens */
 @media (max-width: 1100px) {
   .salad-grid { grid-template-columns: repeat(4, 1fr); }
@@ -2493,7 +2556,6 @@ body {
             <div class="claw-head" id="claw-head"><div class="claw-base"></div></div>
           </div>
           <div class="claw-prizes" id="claw-prizes"></div>
-          <div class="claw-chute"></div>
           <div class="claw-timer"   id="claw-timer"   style="display:none">3</div>
           <div class="claw-tension" id="claw-tension" style="display:none">두구두구...</div>
           <div class="claw-result" id="claw-result">왼쪽에서 자기 이름을 클릭하세요</div>
@@ -3688,7 +3750,7 @@ function stopBasketAim() {
 
   // 살아있는 골대만 후보. 만석 골대는 화면에 없음.
   const active = getActiveHoopsLayout();
-  if (active.length === 0) return; // 안전장치
+  if (active.length === 0) return;
   // 화살표 위치에서 가장 가까운 살아있는 골대 선택
   let chosen = active[0];
   let minDist = Math.abs(arrowPct - chosen.xPct);
@@ -4196,6 +4258,85 @@ function initClawPrizes() {
   });
 }
 
+
+/* ── 캡슐 선택 (인형 못 잡을 때 폴백) ── */
+function showClawCapsules() {
+  // 이미 오버레이 있으면 중복 방지
+  if (document.getElementById('capsule-overlay')) return;
+
+  // 남은 팀 슬롯 pool 구성
+  const pool = [];
+  ['A','B','C','D'].forEach(t => {
+    for (let i = 0; i < (state.clawCapacity[t] || 0); i++) pool.push(t);
+  });
+  if (pool.length === 0) return;
+
+  // 셔플 (어느 캡슐이 어느 팀인지 숨김)
+  for (let i = pool.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [pool[i], pool[j]] = [pool[j], pool[i]];
+  }
+
+  const overlay = document.createElement('div');
+  overlay.className = 'capsule-overlay';
+  overlay.id = 'capsule-overlay';
+  overlay.innerHTML = '<div class="capsule-title">🎰 캡슐을 하나 선택하세요!</div>'
+                    + '<div class="capsule-grid" id="capsule-grid"></div>';
+
+  const grid = overlay.querySelector('#capsule-grid');
+  pool.forEach((team, i) => {
+    const cap = document.createElement('div');
+    cap.className = 'capsule-item';
+    cap.style.setProperty('--cap-delay', (i * 0.045) + 's');
+    cap.dataset.team = team;
+    cap.textContent = '?';
+    cap.onclick = () => onCapsuleClick(cap);
+    grid.appendChild(cap);
+  });
+
+  document.body.appendChild(overlay);
+  $('claw-result').textContent = `${state.currentPicker}님, 캡슐을 하나 고르세요!`;
+}
+
+function onCapsuleClick(el) {
+  if (el.classList.contains('opened') || el.classList.contains('dimmed')) return;
+
+  const team = el.dataset.team;
+  state.clawCapacity[team]--;
+
+  // 나머지 캡슐 흐리게
+  document.querySelectorAll('.capsule-item').forEach(c => {
+    if (c !== el) c.classList.add('dimmed');
+  });
+
+  // 선택한 캡슐 열기
+  el.classList.add('opened');
+  el.style.background = `radial-gradient(circle at 35% 32%, ${teamColorLight(team)} 0%, ${teamColor(team)} 100%)`;
+  el.textContent = team;
+
+  $('claw-result').className = 'claw-result big-reveal';
+  $('claw-result').innerHTML = `<span style="color:${teamColor(team)}">${team}조!</span>`;
+
+  setTimeout(() => {
+    const ov = document.getElementById('capsule-overlay');
+    if (ov) ov.remove();
+    commitItemPick(team, 'claw-current', 'claw-teams');
+    state.clawOrderIdx++;
+    renderOrderedNamePanel('claw-names', 'claw');
+    $('claw-stop').style.display = 'none';
+    $('claw-go').style.display = 'none';
+    updateClawPrizesFullness();
+    resetClawScene();
+    $('claw-result').className = 'claw-result';
+    if (isAllPicked()) finishGame();
+    else activateNextOrderedTurn('claw');
+  }, 1600);
+}
+
+function teamColorLight(t) {
+  return ({ A:'#ff9ab5', B:'#9ae4ff', C:'#fff0a0', D:'#6ffad8' })[t] || '#fff';
+}
+
 /* ============================================================
    POINT 19: CLAW MACHINE 🕹️ (ARCADE STYLE)
    ============================================================ */
@@ -4299,13 +4440,21 @@ function startClawMove() {
     if (state.clawTimeLeft <= 0) {
       clearInterval(state.clawCountdown);
       state.clawCountdown = null;
-      if (state.clawMoveRunning) stopClawMove();
+      // 타이머 만료 → 자동 집기 대신 캡슐 등장
+      if (state.clawMoveRunning) {
+        state.clawMoveRunning = false;
+        if (state.clawMoveRaf) cancelAnimationFrame(state.clawMoveRaf);
+      }
+      $('claw-stop').disabled = true;
+      $('claw-tension').style.display = 'none';
+      if ($('claw-timer')) $('claw-timer').style.display = 'none';
+      showClawCapsules();
     }
   }, 1000);
 
   const arm = $('claw-arm');
   arm.style.transition = 'none';
-  const period = 720;
+  const period = 1020;
   const tick = (now) => {
     if (!state.clawMoveRunning) return;
     const t = ((now - state.clawMoveStart) % period) / period;
@@ -4342,7 +4491,7 @@ function stopClawMove() {
     const xPct = ((r.left + r.width/2) - stageRect.left) / stageRect.width * 100;
     active.push({ team: t, el: p, xPct });
   });
-  if (active.length === 0) return;
+  if (active.length === 0) { showClawCapsules(); return; }
   let chosen = active[0];
   let minDist = Math.abs(armCenterX - chosen.xPct);
   for (let i = 1; i < active.length; i++) {
