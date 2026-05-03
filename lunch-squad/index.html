@@ -228,21 +228,21 @@ body {
 .salad-grid {
   display: grid;
   grid-template-columns: repeat(5, 1fr);
-  gap: 18px;
+  gap: 22px;
   margin: 0 auto;
-  max-width: 1000px;
+  max-width: 1300px;
 }
 .salad-card {
   aspect-ratio: 3 / 4;
   background: linear-gradient(160deg, #2a3050 0%, #1c2038 100%);
   border: 2px solid var(--c-border);
-  padding: 16px 12px;
+  padding: 20px 14px;
   text-align: center;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
   align-items: center;
-  font-size: 22px;
+  font-size: 26px;
   font-weight: 800;
   color: var(--c-text);
   cursor: pointer;
@@ -296,17 +296,19 @@ body {
 }
 .salad-card.fixed:hover { transform: none; }
 .salad-card .card-icon {
-  font-size: 28px;
-  margin-top: 4px;
+  font-size: 42px;
+  margin-top: 6px;
   opacity: 0.4;
 }
 .salad-card.fixed .card-icon { opacity: 1; }
 .salad-card .name {
   display: block;
-  font-size: 24px;
+  font-size: 28px;
   font-weight: 900;
   letter-spacing: -0.02em;
-  margin: 8px 0;
+  margin: 10px 0;
+  text-align: center;
+  width: 100%;
 }
 .salad-card .label {
   display: block;
@@ -324,8 +326,9 @@ body {
   font-size: 11px;
   font-weight: 700;
   color: var(--c-text-dim);
-  letter-spacing: 0.15em;
+  letter-spacing: 0.08em;
   margin-bottom: 2px;
+  white-space: nowrap;
 }
 .salad-summary {
   text-align: center;
@@ -792,6 +795,7 @@ body {
   padding: 40px 12px;
   flex-wrap: nowrap;
 }
+/* ── 직선 모드 (4장 이하) ── */
 .spread-card {
   width: 110px;
   height: 170px;
@@ -799,7 +803,7 @@ body {
   position: relative;
   cursor: pointer;
   perspective: 1200px;
-  transition: transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+  transition: transform 0.25s cubic-bezier(0.2, 0.8, 0.2, 1);
   flex-shrink: 0;
 }
 .spread-card:first-child { margin-left: 0; }
@@ -808,6 +812,38 @@ body {
 .spread-card.picked:hover { transform: translateY(-12px); }
 .spread-card.disabled { cursor: default; }
 .spread-card.disabled:hover { transform: none; }
+
+/* ── 호(arc) 모드: 포물선 위에 카드 배치 (타로 스프레드) ── */
+.card-spread.arc-mode {
+  position: relative;
+  height: 270px;
+  padding: 0;
+  overflow: visible;
+}
+/* 각 카드는 포물선 좌표 (--arc-x, --arc-y)에 배치되고 --arc-angle 만큼 기울어짐 */
+.card-spread.arc-mode .spread-card {
+  position: absolute;
+  left: calc(var(--arc-x, 50%) - 55px);
+  bottom: var(--arc-y, 10px);
+  margin-left: 0;
+  transform-origin: 50% 50%;
+  transform: rotate(var(--arc-angle, 0deg));
+  transition: transform 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.card-spread.arc-mode .spread-card:hover {
+  transform: rotate(var(--arc-angle, 0deg)) translateY(-24px);
+  z-index: 100 !important;
+}
+.card-spread.arc-mode .spread-card.picked {
+  transform: rotate(var(--arc-angle, 0deg)) translateY(-14px);
+  cursor: default;
+}
+.card-spread.arc-mode .spread-card.picked:hover {
+  transform: rotate(var(--arc-angle, 0deg)) translateY(-14px);
+}
+.card-spread.arc-mode .spread-card.disabled:hover {
+  transform: rotate(var(--arc-angle, 0deg));
+}
 
 .spread-card-inner {
   position: relative;
@@ -1489,225 +1525,6 @@ body {
 }
 .random-pick-actions { display: flex; gap: 12px; }
 
-/* ============ DART GAME 🎯 (PUB STYLE) ============ */
-.dart-stage {
-  width: 100%;
-  height: 100%;
-  position: relative;
-  overflow: hidden;
-  background:
-    radial-gradient(ellipse 70% 40% at 50% 18%, rgba(255,210,120,0.18) 0%, transparent 65%),
-    linear-gradient(180deg, #2a1a0d 0%, #3d2614 45%, #2a1a0d 100%);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: flex-start;
-}
-.dart-stage::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background:
-    repeating-linear-gradient(90deg,
-      rgba(0,0,0,0.0) 0,
-      rgba(0,0,0,0.0) 56px,
-      rgba(0,0,0,0.18) 56px,
-      rgba(0,0,0,0.18) 58px),
-    repeating-linear-gradient(0deg,
-      rgba(255,180,80,0.04) 0,
-      rgba(255,180,80,0.04) 110px,
-      transparent 110px,
-      transparent 112px);
-  pointer-events: none;
-  z-index: 0;
-}
-.dart-spotlight {
-  position: absolute;
-  top: -10%; left: 50%;
-  transform: translateX(-50%);
-  width: 480px;
-  height: 460px;
-  background: radial-gradient(ellipse at 50% 0%, rgba(255,236,170,0.45) 0%, rgba(255,236,170,0.15) 30%, transparent 60%);
-  pointer-events: none;
-  z-index: 1;
-}
-.dart-board-wrap {
-  position: relative;
-  margin-top: 30px;
-  margin-bottom: 14px;
-  z-index: 3;
-  width: 320px;
-  height: 320px;
-}
-.dart-board {
-  position: absolute;
-  inset: 0;
-  border-radius: 50%;
-  background:
-    conic-gradient(
-      from -45deg,
-      var(--team-a) 0deg 90deg,
-      var(--team-b) 90deg 180deg,
-      var(--team-c) 180deg 270deg,
-      var(--team-d) 270deg 360deg
-    );
-  border: 8px solid #1a0d05;
-  box-shadow:
-    0 16px 36px rgba(0,0,0,0.7),
-    inset 0 0 50px rgba(0,0,0,0.6),
-    0 0 0 4px #4a2818,
-    0 0 0 14px #2a160a,
-    0 0 0 16px #d4af37;
-}
-.dart-board.full-a { background: conic-gradient(from -45deg, #444 0deg 90deg, var(--team-b) 90deg 180deg, var(--team-c) 180deg 270deg, var(--team-d) 270deg 360deg); }
-.dart-board.full-b { background: conic-gradient(from -45deg, var(--team-a) 0deg 90deg, #444 90deg 180deg, var(--team-c) 180deg 270deg, var(--team-d) 270deg 360deg); }
-.dart-board.full-c { background: conic-gradient(from -45deg, var(--team-a) 0deg 90deg, var(--team-b) 90deg 180deg, #444 180deg 270deg, var(--team-d) 270deg 360deg); }
-.dart-board.full-d { background: conic-gradient(from -45deg, var(--team-a) 0deg 90deg, var(--team-b) 90deg 180deg, var(--team-c) 180deg 270deg, #444 270deg 360deg); }
-.dart-board.full-ab { background: conic-gradient(from -45deg, #444 0deg 90deg, #444 90deg 180deg, var(--team-c) 180deg 270deg, var(--team-d) 270deg 360deg); }
-.dart-board.full-ac { background: conic-gradient(from -45deg, #444 0deg 90deg, var(--team-b) 90deg 180deg, #444 180deg 270deg, var(--team-d) 270deg 360deg); }
-.dart-board.full-ad { background: conic-gradient(from -45deg, #444 0deg 90deg, var(--team-b) 90deg 180deg, var(--team-c) 180deg 270deg, #444 270deg 360deg); }
-.dart-board.full-bc { background: conic-gradient(from -45deg, var(--team-a) 0deg 90deg, #444 90deg 180deg, #444 180deg 270deg, var(--team-d) 270deg 360deg); }
-.dart-board.full-bd { background: conic-gradient(from -45deg, var(--team-a) 0deg 90deg, #444 90deg 180deg, var(--team-c) 180deg 270deg, #444 270deg 360deg); }
-.dart-board.full-cd { background: conic-gradient(from -45deg, var(--team-a) 0deg 90deg, var(--team-b) 90deg 180deg, #444 180deg 270deg, #444 270deg 360deg); }
-/* concentric ring overlays */
-.dart-ring-mid, .dart-ring-inner {
-  position: absolute;
-  border-radius: 50%;
-  pointer-events: none;
-  border: 2px solid rgba(255,255,255,0.25);
-  box-shadow: 0 0 0 1px rgba(0,0,0,0.5);
-}
-.dart-ring-mid   { inset: 18%; border: 3px dashed rgba(0,0,0,0.45); }
-.dart-ring-inner { inset: 36%; border: 2px solid rgba(255,255,255,0.6); background: rgba(0,0,0,0.35); }
-.dart-bullseye {
-  position: absolute;
-  top: 50%; left: 50%;
-  width: 24px; height: 24px;
-  background: radial-gradient(circle, #ffe680 0%, #ff8a3d 60%, #c9184a 100%);
-  border: 2px solid #fff;
-  border-radius: 50%;
-  transform: translate(-50%,-50%);
-  box-shadow: 0 0 16px rgba(255, 138, 61, 0.9);
-  z-index: 4;
-}
-.dart-quad {
-  position: absolute;
-  font-size: 30px;
-  font-weight: 900;
-  color: rgba(0,0,0,0.7);
-  font-family: 'Black Han Sans', sans-serif;
-  text-shadow: 0 2px 0 rgba(255,255,255,0.25);
-  z-index: 3;
-}
-.dart-quad.ql-a { top: 14%; right: 14%; }
-.dart-quad.ql-b { bottom: 14%; right: 14%; }
-.dart-quad.ql-c { bottom: 14%; left: 14%; }
-.dart-quad.ql-d { top: 14%; left: 14%; }
-.dart-quad.quad-x { color: #555; opacity: 0.4; }
-.dart-quad.flash {
-  animation: quad-flash 0.7s ease-out;
-}
-@keyframes quad-flash {
-  0%   { transform: scale(1); filter: brightness(1); }
-  40%  { transform: scale(1.5); filter: brightness(2); color: #fff; text-shadow: 0 0 16px #fff; }
-  100% { transform: scale(1); filter: brightness(1); }
-}
-
-.dart-aim-track {
-  position: absolute;
-  top: 18px;
-  left: 8%;
-  right: 8%;
-  height: 3px;
-  background: linear-gradient(90deg, transparent, rgba(255,216,77,0.4), transparent);
-  border-radius: 2px;
-  z-index: 3;
-}
-.dart-aim {
-  position: absolute;
-  top: 50%; left: 50%;
-  transform: translate(-50%,-50%);
-  font-size: 26px;
-  filter: drop-shadow(0 0 14px var(--c-accent));
-  color: var(--c-accent);
-}
-.dart-thrown {
-  position: absolute;
-  font-size: 38px;
-  pointer-events: none;
-  z-index: 8;
-  filter: drop-shadow(0 4px 8px rgba(0,0,0,0.7));
-  transform-origin: 50% 50%;
-}
-.dart-thrown.flying {
-  transition: left 0.7s cubic-bezier(0.4, 0.0, 0.6, 1.1), top 0.7s cubic-bezier(0.4, 0.0, 0.6, 1.1), transform 0.7s linear;
-}
-.dart-thrown.wobble {
-  animation: dart-wobble 0.5s cubic-bezier(0.36, 0.07, 0.19, 0.97);
-}
-@keyframes dart-wobble {
-  0%   { transform: translate(-50%,-50%) rotate(-25deg) scale(1.4); }
-  35%  { transform: translate(-50%,-50%) rotate(12deg) scale(1.05); }
-  60%  { transform: translate(-50%,-50%) rotate(-6deg) scale(1.0); }
-  100% { transform: translate(-50%,-50%) rotate(-15deg) scale(1.0); }
-}
-
-.dart-tension, .claw-tension, .mole-tension, .archery-tension {
-  position: absolute;
-  font-family: 'Black Han Sans', sans-serif;
-  font-size: 28px;
-  letter-spacing: -0.02em;
-  color: var(--c-accent);
-  text-shadow: 0 0 24px rgba(255,216,77,0.7), 0 4px 12px rgba(0,0,0,0.7);
-  z-index: 6;
-  text-align: center;
-  left: 0; right: 0;
-}
-.dart-tension { bottom: 16%; }
-.dart-tension.shake, .claw-tension.shake, .mole-tension.shake, .archery-tension.shake {
-  animation: text-shake 0.32s linear infinite;
-}
-@keyframes text-shake {
-  0%, 100% { transform: translate(0,0); }
-  25% { transform: translate(-3px, 1px); }
-  50% { transform: translate(3px, -1px); }
-  75% { transform: translate(-1px, 2px); }
-}
-.dart-result {
-  position: absolute;
-  bottom: 8%;
-  left: 0; right: 0;
-  text-align: center;
-  font-size: 22px;
-  font-weight: 800;
-  color: var(--c-accent);
-  text-shadow: 0 2px 8px rgba(0,0,0,0.6);
-  z-index: 5;
-  min-height: 28px;
-}
-.big-reveal {
-  font-family: 'Black Han Sans', sans-serif !important;
-  font-size: 72px !important;
-  letter-spacing: -0.04em !important;
-  animation: big-pop 0.6s cubic-bezier(0.2, 0.8, 0.2, 1.4);
-  filter: drop-shadow(0 0 30px currentColor);
-}
-@keyframes big-pop {
-  0%   { transform: scale(0.3) rotate(-12deg); opacity: 0; }
-  55%  { transform: scale(1.25) rotate(4deg); opacity: 1; }
-  80%  { transform: scale(0.95) rotate(-2deg); }
-  100% { transform: scale(1) rotate(0); opacity: 1; }
-}
-.dart-controls {
-  position: absolute;
-  bottom: 3%;
-  left: 0; right: 0;
-  display: flex;
-  justify-content: center;
-  gap: 12px;
-  z-index: 6;
-}
-
 /* ============ CLAW MACHINE 🕹️ (ARCADE STYLE) ============ */
 .claw-stage {
   width: 100%;
@@ -1882,68 +1699,63 @@ body {
 .claw-head.closed::after  { transform: rotate(12deg); }
 .claw-prizes {
   position: absolute;
-  bottom: 24%;
-  left: 0; right: 0;
-  display: flex;
-  justify-content: space-around;
-  align-items: flex-end;
-  padding: 0 14%;
+  top: 14%;
+  bottom: 22%;
+  left: 5%;
+  right: 5%;
   z-index: 2;
+  overflow: visible;
 }
 .claw-prize {
-  width: 64px;
-  height: 78px;
-  border-radius: 24px 24px 14px 14px;
+  position: absolute;
+  width: 50px;
+  height: 60px;
+  border-radius: 18px 18px 12px 12px;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   font-family: 'Black Han Sans', sans-serif;
-  font-size: 24px;
   font-weight: 900;
   color: #fff;
-  box-shadow: 0 6px 14px rgba(0,0,0,0.5), inset 0 -4px 8px rgba(0,0,0,0.2), inset 0 4px 4px rgba(255,255,255,0.3);
+  box-shadow: 0 4px 10px rgba(0,0,0,0.55), inset 0 -3px 6px rgba(0,0,0,0.25), inset 0 3px 6px rgba(255,255,255,0.3);
   transition: transform 0.4s ease, opacity 0.4s ease;
-  position: relative;
 }
-.claw-prize::before {
-  content: "";
-  position: absolute;
-  top: 14%;
-  left: 22%;
-  width: 8px;
-  height: 8px;
-  background: #fff;
-  border-radius: 50%;
-  box-shadow: 18px 0 0 #fff;
+.claw-prize.team-a { background: linear-gradient(160deg, #ff9ab5, #ff4d6d); }
+.claw-prize.team-b { background: linear-gradient(160deg, #9ae4ff, #4cc9f0); }
+.claw-prize.team-c { background: linear-gradient(160deg, #fff0a0, #ffd166); color:#5a4400; }
+.claw-prize.team-d { background: linear-gradient(160deg, #6ffad8, #06d6a0); }
+.claw-prize .pz-face {
+  font-size: 24px;
+  line-height: 1;
+  margin-bottom: 1px;
+  filter: drop-shadow(0 1px 3px rgba(0,0,0,0.35));
 }
-.claw-prize::after {
-  content: "";
-  position: absolute;
-  top: 28%;
-  left: 38%;
-  width: 18px;
-  height: 8px;
-  border-bottom: 3px solid #fff;
-  border-radius: 0 0 12px 12px;
-}
-.claw-prize.team-a { background: linear-gradient(160deg, #ff7a9c, #ff4d6d); }
-.claw-prize.team-b { background: linear-gradient(160deg, #7ad8ff, #4cc9f0); }
-.claw-prize.team-c { background: linear-gradient(160deg, #ffe680, #ffd166); color:#5a4400; }
-.claw-prize.team-c::before { background: #5a4400; box-shadow: 18px 0 0 #5a4400; }
-.claw-prize.team-c::after { border-bottom-color: #5a4400; }
-.claw-prize.team-d { background: linear-gradient(160deg, #4af0c4, #06d6a0); }
 .claw-prize .pz-letter {
   position: absolute;
-  bottom: 12%;
+  bottom: 8%;
+  font-size: 11px;
   letter-spacing: -0.02em;
+  opacity: 0.85;
+}
+@keyframes prize-float {
+  0%   { transform: rotate(var(--r, 0deg)) translate(0px,   0px); }
+  25%  { transform: rotate(var(--r, 0deg)) translate(5px,  -6px); }
+  50%  { transform: rotate(var(--r, 0deg)) translate(0px, -10px); }
+  75%  { transform: rotate(var(--r, 0deg)) translate(-5px, -6px); }
+  100% { transform: rotate(var(--r, 0deg)) translate(0px,   0px); }
+}
+.claw-prize {
+  animation: prize-float 2.2s ease-in-out infinite;
 }
 .claw-prize.full {
-  opacity: 0.25;
-  filter: grayscale(0.7);
+  opacity: 0.22;
+  filter: grayscale(0.75);
+  animation: none;
 }
 .claw-prize.taken {
   z-index: 6;
+  animation: none;
   transition: top 0.4s ease, transform 0.4s ease, opacity 0.4s ease 0.4s;
 }
 .claw-floor {
@@ -1987,6 +1799,24 @@ body {
 .claw-tension {
   bottom: 21%;
 }
+.claw-timer {
+  position: absolute;
+  top: 6%;
+  left: 6%;
+  font-family: 'Black Han Sans', sans-serif;
+  font-size: 52px;
+  font-weight: 900;
+  color: #ffd84d;
+  text-shadow: 0 0 20px rgba(255,216,77,0.8), 0 4px 8px rgba(0,0,0,0.6);
+  z-index: 7;
+  line-height: 1;
+  animation: timer-pulse 1s ease-in-out infinite;
+}
+.claw-timer.danger {
+  color: #ff4d6d;
+  text-shadow: 0 0 24px rgba(255,77,109,0.9), 0 4px 8px rgba(0,0,0,0.6);
+  animation: timer-danger 0.25s linear infinite;
+}
 .claw-controls {
   position: absolute;
   top: 4%;
@@ -2007,48 +1837,73 @@ body {
   height: 100%;
   position: relative;
   overflow: hidden;
-  cursor: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='40' height='40' viewBox='0 0 40 40'><text y='32' font-size='32'>🔨</text></svg>") 4 32, crosshair;
-  background:
-    radial-gradient(ellipse at 50% 8%, rgba(255,232,160,0.18) 0%, transparent 55%),
-    linear-gradient(180deg, #5fa83d 0%, #4a8a2e 50%, #2d5a1a 100%);
+  cursor: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='100' height='100' viewBox='0 0 100 100'><text y='82' font-size='82'>🔨</text></svg>") 10 80, crosshair;
+  background: linear-gradient(180deg,
+    #7ec8e3 0%,
+    #a8ddf0 18%,
+    #5ab84a 18%,
+    #3d8030 28%,
+    #7a4d1c 28%,
+    #5a3410 100%);
 }
 .mole-stage::before {
+  /* 잔디 블레이드 */
   content: "";
   position: absolute;
-  inset: 0;
-  background:
-    repeating-linear-gradient(45deg,
-      rgba(255,255,255,0.04) 0,
-      rgba(255,255,255,0.04) 4px,
-      transparent 4px,
-      transparent 12px);
+  top: 15%;
+  left: 0; right: 0;
+  height: 7%;
+  background: linear-gradient(180deg, #6dcf55, #3d8030);
+  clip-path: polygon(
+    0% 100%, 1.5% 10%, 3% 100%, 4.5% 5%, 6% 100%, 7.5% 20%, 9% 100%,
+    10.5% 8%, 12% 100%, 13.5% 15%, 15% 100%, 16.5% 5%, 18% 100%,
+    19.5% 18%, 21% 100%, 22.5% 10%, 24% 100%, 25.5% 25%, 27% 100%,
+    28.5% 8%, 30% 100%, 31.5% 15%, 33% 100%, 34.5% 5%, 36% 100%,
+    37.5% 20%, 39% 100%, 40.5% 10%, 42% 100%, 43.5% 18%, 45% 100%,
+    46.5% 5%, 48% 100%, 49.5% 12%, 51% 100%, 52.5% 22%, 54% 100%,
+    55.5% 8%, 57% 100%, 58.5% 15%, 60% 100%, 61.5% 5%, 63% 100%,
+    64.5% 20%, 66% 100%, 67.5% 10%, 69% 100%, 70.5% 18%, 72% 100%,
+    73.5% 5%, 75% 100%, 76.5% 12%, 78% 100%, 79.5% 25%, 81% 100%,
+    82.5% 8%, 84% 100%, 85.5% 15%, 87% 100%, 88.5% 5%, 90% 100%,
+    91.5% 18%, 93% 100%, 94.5% 10%, 96% 100%, 97.5% 22%, 99% 100%,
+    100% 100%
+  );
+  z-index: 1;
   pointer-events: none;
+}
+.mole-stage::after {
+  /* 구름 + 햇빛 */
+  content: "";
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 18%;
+  background:
+    radial-gradient(ellipse 40% 60% at 20% 50%, rgba(255,255,255,0.7) 0%, transparent 60%),
+    radial-gradient(ellipse 30% 55% at 55% 40%, rgba(255,255,255,0.65) 0%, transparent 55%),
+    radial-gradient(ellipse at 80% 30%, rgba(255,240,150,0.25) 0%, transparent 50%);
+  pointer-events: none;
+  z-index: 2;
 }
 .mole-banner {
   position: absolute;
-  top: 12px;
+  top: 14px;
   left: 50%;
   transform: translateX(-50%);
-  background: linear-gradient(180deg, #ff4d6d 0%, #c9184a 100%);
-  color: #fff;
-  font-family: 'Black Han Sans', sans-serif;
-  font-size: 20px;
-  font-weight: 900;
-  padding: 8px 32px;
-  border: 4px solid #ffd84d;
-  border-radius: 999px;
-  box-shadow: 0 6px 18px rgba(0,0,0,0.5);
-  letter-spacing: -0.02em;
-  text-shadow: 0 -2px 0 rgba(0,0,0,0.3);
-  z-index: 5;
-}
-.mole-banner::before, .mole-banner::after {
-  content: "★";
-  display: inline-block;
-  margin: 0 12px;
+  background: rgba(0,0,0,0.32);
   color: #ffd84d;
-  text-shadow: 0 0 8px #ffd84d;
+  font-family: 'Black Han Sans', sans-serif;
+  font-size: 22px;
+  font-weight: 900;
+  padding: 9px 32px;
+  border: 1px solid rgba(255,216,77,0.28);
+  border-radius: 10px;
+  letter-spacing: 0.12em;
+  text-shadow: 0 0 20px rgba(255,216,77,0.45);
+  backdrop-filter: blur(6px);
+  z-index: 5;
+  white-space: nowrap;
 }
+.mole-banner::before, .mole-banner::after { content: none; }
 .mole-grid {
   position: absolute;
   top: 22%;
@@ -2057,7 +1912,7 @@ body {
   bottom: 8%;
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  grid-template-rows: repeat(2, 1fr);
+  grid-template-rows: repeat(3, 1fr);
   gap: 14px;
   padding: 8px;
 }
@@ -2089,64 +1944,155 @@ body {
   pointer-events: none;
 }
 .mole {
-  width: 72%;
-  height: 82%;
-  border-radius: 50% 50% 30% 30%;
-  background: linear-gradient(160deg, #c08560 0%, #7a4a2f 100%);
+  width: 74%;
+  height: 86%;
+  border-radius: 50% 50% 36% 36%;
+  background: linear-gradient(160deg, #d4a070 0%, #8a5230 100%);
   position: relative;
   transform: translateY(110%);
   transition: transform 0.08s ease-out;
-  cursor: pointer;
-  box-shadow: inset 0 -10px 14px rgba(0,0,0,0.45), 0 4px 8px rgba(0,0,0,0.3);
+  cursor: inherit;
+  box-shadow: inset 0 -10px 14px rgba(0,0,0,0.4), 0 4px 8px rgba(0,0,0,0.3);
   z-index: 2;
+  overflow: visible;
 }
+/* 발(paws) */
+.mole::before {
+  content: "";
+  position: absolute;
+  bottom: 14%;
+  left: -10%;
+  width: 22%;
+  height: 18%;
+  background: inherit;
+  border-radius: 50%;
+  box-shadow: inset 0 -2px 4px rgba(0,0,0,0.3);
+}
+.mole::after {
+  content: "";
+  position: absolute;
+  bottom: 14%;
+  right: -10%;
+  width: 22%;
+  height: 18%;
+  background: inherit;
+  border-radius: 50%;
+  box-shadow: inset 0 -2px 4px rgba(0,0,0,0.3);
+}
+/* 귀 */
+.mole-ears {
+  position: absolute;
+  top: -18%;
+  left: 0; right: 0;
+  height: 28%;
+  pointer-events: none;
+  z-index: 3;
+}
+.mole-ears::before, .mole-ears::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  width: 26%;
+  height: 100%;
+  border-radius: 50% 50% 0 0;
+  background: #d4a070;
+}
+.mole-ears::before { left: 14%; }
+.mole-ears::after  { right: 14%; }
+/* 귀 안쪽 (분홍) */
+.mole-ears .ear-inner {
+  position: absolute;
+  top: 15%;
+  width: 14%;
+  height: 65%;
+  background: rgba(255,160,160,0.6);
+  border-radius: 50% 50% 0 0;
+}
+.mole-ears .ear-inner.left  { left: 19%; }
+.mole-ears .ear-inner.right { right: 19%; }
+
+/* 팀별 귀 색상 */
+.mole.team-a .mole-ears::before,
+.mole.team-a .mole-ears::after { background: #ff9ab5; }
+.mole.team-b .mole-ears::before,
+.mole.team-b .mole-ears::after { background: #9ae4ff; }
+.mole.team-c .mole-ears::before,
+.mole.team-c .mole-ears::after { background: #fff0a0; }
+.mole.team-d .mole-ears::before,
+.mole.team-d .mole-ears::after { background: #6ffad8; }
+
 .mole-face {
   position: absolute;
-  top: 18%;
+  top: 14%;
   left: 50%;
   transform: translateX(-50%);
-  width: 70%;
-  height: 60%;
+  width: 80%;
+  height: 70%;
   display: flex;
   align-items: center;
   justify-content: center;
   flex-direction: column;
-  font-family: 'Black Han Sans', sans-serif;
-  font-weight: 900;
-  font-size: 22px;
-  letter-spacing: -0.02em;
-  color: #fff;
   pointer-events: none;
 }
 .mole-eyes {
   display: flex;
-  gap: 14px;
-  margin-bottom: 4px;
-  font-size: 14px;
-  line-height: 1;
+  gap: 12px;
+  margin-bottom: 3px;
+  position: relative;
 }
 .mole-eyes::before, .mole-eyes::after {
   content: "";
-  width: 8px;
-  height: 8px;
+  width: 10px;
+  height: 10px;
   background: #1a1a2e;
   border-radius: 50%;
-  box-shadow: 0 0 0 2px #fff;
+  box-shadow: 0 0 0 2px #fff, 2px -2px 0 0 rgba(255,255,255,0.5);
+}
+/* 볼터치 */
+.mole-face::before {
+  content: "";
+  position: absolute;
+  bottom: 42%;
+  left: -4px;
+  width: 14px; height: 7px;
+  background: rgba(255,140,160,0.5);
+  border-radius: 50%;
+}
+.mole-face::after {
+  content: "";
+  position: absolute;
+  bottom: 42%;
+  right: -4px;
+  width: 14px; height: 7px;
+  background: rgba(255,140,160,0.5);
+  border-radius: 50%;
+}
+/* 코 */
+.mole-nose {
+  width: 18px;
+  height: 11px;
+  background: radial-gradient(ellipse, #ff8fab 30%, #e05070 100%);
+  border-radius: 50%;
+  margin: 0 auto 2px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.25), inset 0 1px 2px rgba(255,255,255,0.3);
 }
 .mole-team-letter {
-  margin-top: 2px;
-  font-size: 22px;
+  font-family: 'Black Han Sans', sans-serif;
+  font-weight: 900;
+  font-size: 18px;
+  color: #fff;
   text-shadow: 0 2px 0 rgba(0,0,0,0.4);
+  margin-top: 1px;
 }
 .mole.up { transform: translateY(8%); }
 .mole.hit {
   transform: translateY(110%) scale(0.7) rotate(20deg);
-  transition: transform 0.25s ease-in;
+  transition: transform 0.2s ease-in;
 }
-.mole.team-a { background: linear-gradient(160deg, #ff7a9c, var(--team-a)); }
-.mole.team-b { background: linear-gradient(160deg, #7ad8ff, var(--team-b)); }
-.mole.team-c { background: linear-gradient(160deg, #ffe680, var(--team-c)); color:#5a4400; }
-.mole.team-d { background: linear-gradient(160deg, #4af0c4, var(--team-d)); }
+.mole.team-a { background: linear-gradient(160deg, #ff9ab5, var(--team-a)); }
+.mole.team-b { background: linear-gradient(160deg, #9ae4ff, var(--team-b)); }
+.mole.team-c { background: linear-gradient(160deg, #fff0a0, var(--team-c)); color:#5a4400; }
+.mole.team-d { background: linear-gradient(160deg, #6ffad8, var(--team-d)); }
 .mole-burst {
   position: absolute;
   pointer-events: none;
@@ -2171,219 +2117,150 @@ body {
   text-shadow: 0 2px 8px rgba(0,0,0,0.6);
   z-index: 4;
 }
+.mole-stage * { cursor: inherit !important; }
 .mole-tension { top: 15%; }
-
-/* ============ ARCHERY 🏹 (OLYMPIC FIELD) ============ */
-.archery-stage {
-  width: 100%;
-  height: 100%;
-  position: relative;
-  overflow: hidden;
-  background:
-    linear-gradient(180deg, #87ceeb 0%, #a0d8e8 30%, #c0e0f0 50%, #4a7c2e 50.5%, #2d5a1a 100%);
-}
-.archery-stage::before {
-  /* clouds */
-  content: "";
-  position: absolute;
-  top: 5%; left: 0; right: 0;
-  height: 18%;
-  background:
-    radial-gradient(ellipse 80px 30px at 15% 50%, rgba(255,255,255,0.85) 0%, transparent 60%),
-    radial-gradient(ellipse 100px 35px at 45% 30%, rgba(255,255,255,0.7) 0%, transparent 60%),
-    radial-gradient(ellipse 60px 22px at 80% 60%, rgba(255,255,255,0.8) 0%, transparent 60%);
-  pointer-events: none;
-  animation: cloud-drift 24s linear infinite;
-}
-@keyframes cloud-drift {
-  0%   { transform: translateX(0); }
-  100% { transform: translateX(-20%); }
-}
-.archery-mountain {
-  position: absolute;
-  bottom: 50%;
-  left: 0; right: 0;
-  height: 18%;
-  background:
-    linear-gradient(135deg, transparent 50%, #4a6080 50%) 0% 0% / 200px 100%,
-    linear-gradient(225deg, transparent 50%, #5a7090 50%) 100px 0% / 200px 100%;
-  background-repeat: repeat-x;
-  opacity: 0.8;
-}
-.archery-grass {
-  position: absolute;
-  bottom: 0; left: 0; right: 0;
-  height: 50%;
-  background:
-    repeating-linear-gradient(85deg,
-      rgba(0,0,0,0.05) 0,
-      rgba(0,0,0,0.05) 4px,
-      transparent 4px,
-      transparent 14px),
-    linear-gradient(180deg, #4a7c2e 0%, #2d5a1a 70%, #1a3010 100%);
-  pointer-events: none;
-}
-.archery-target-wrap {
-  position: absolute;
-  bottom: 40%;
-  left: 0; right: 0;
-  height: 200px;
-  pointer-events: none;
-  z-index: 2;
-}
-.archery-target {
-  position: absolute;
-  bottom: 0;
-  left: 50%;
-  width: 200px;
-  height: 200px;
-  border-radius: 50%;
-  background:
-    radial-gradient(circle,
-      var(--c-accent) 0% 12%,
-      var(--team-a) 12% 30%,
-      var(--team-b) 30% 52%,
-      var(--team-c) 52% 74%,
-      var(--team-d) 74% 100%
-    );
-  box-shadow:
-    0 12px 24px rgba(0,0,0,0.5),
-    inset 0 0 0 4px #fff,
-    inset 0 0 0 6px rgba(0,0,0,0.4);
-  transform: translateX(-50%);
-  margin-left: 0;
-}
-.archery-target.moving {
-  animation: target-sway 2.4s ease-in-out infinite;
-}
-@keyframes target-sway {
-  0%, 100% { margin-left: -180px; }
-  50%      { margin-left: 180px; }
-}
-.archery-target-stand {
-  position: absolute;
-  bottom: 36%;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 14px;
-  height: 60px;
-  background: linear-gradient(180deg, #8a5a2e, #5a3818);
-  border-radius: 4px;
-  z-index: 1;
-}
-.archer {
-  position: absolute;
-  bottom: 12%;
-  left: 50%;
-  transform: translateX(-50%);
-  font-size: 64px;
-  filter: drop-shadow(0 6px 8px rgba(0,0,0,0.4));
-  z-index: 3;
-  transition: transform 0.2s ease;
-}
-.archer.drawing {
-  transform: translateX(-50%) scale(1.1);
-}
-.archery-power-bar {
-  position: absolute;
-  bottom: 7%;
-  left: 6%;
-  width: 28%;
-  height: 24px;
-  background: rgba(0,0,0,0.55);
-  border: 3px solid #fff;
-  border-radius: 12px;
-  overflow: hidden;
-  z-index: 5;
-  box-shadow: 0 4px 8px rgba(0,0,0,0.3);
-}
-.archery-power-fill {
-  position: absolute;
-  top: 0; left: 0; bottom: 0;
-  width: 0%;
-  background: linear-gradient(90deg, #06d6a0, #ffd84d 50%, #ff4d6d);
-  transition: width 0.04s linear;
-  box-shadow: inset 0 -2px 4px rgba(0,0,0,0.3);
-}
-.archery-power-label {
-  position: absolute;
-  bottom: calc(7% + 28px);
-  left: 6%;
-  font-size: 12px;
-  font-weight: 800;
-  color: #fff;
-  text-shadow: 0 1px 4px rgba(0,0,0,0.7);
-  z-index: 5;
-  letter-spacing: 0.08em;
-}
-.archery-wind {
+.mole-timer {
   position: absolute;
   top: 6%;
-  right: 6%;
-  background: rgba(0,0,0,0.4);
-  color: #fff;
-  padding: 6px 12px;
-  border-radius: 8px;
-  font-size: 13px;
-  font-weight: 700;
-  z-index: 5;
-  text-shadow: 0 1px 2px rgba(0,0,0,0.7);
-}
-.archery-arrow {
-  position: absolute;
-  font-size: 32px;
-  z-index: 4;
-  filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5));
-  pointer-events: none;
-  transform-origin: 50% 50%;
-}
-.archery-arrow.flying {
-  transition: left 0.7s cubic-bezier(0.4, 0.0, 0.6, 1.05), top 0.7s cubic-bezier(0.4, 0.0, 0.6, 1.05), transform 0.7s linear;
-}
-.archery-arrow.stuck {
-  animation: arrow-vibrate 0.5s ease-out;
-}
-@keyframes arrow-vibrate {
-  0%   { transform: translate(-50%,-50%) rotate(0) scale(1.3); }
-  20%  { transform: translate(-50%,-50%) rotate(8deg) scale(1.05); }
-  40%  { transform: translate(-50%,-50%) rotate(-6deg) scale(1.0); }
-  60%  { transform: translate(-50%,-50%) rotate(3deg) scale(1.0); }
-  100% { transform: translate(-50%,-50%) rotate(0) scale(1.0); }
-}
-.archery-result {
-  position: absolute;
-  top: 4%;
-  left: 0; right: 0;
-  text-align: center;
-  font-size: 20px;
+  right: 5%;
+  font-family: 'Black Han Sans', sans-serif;
+  font-size: 60px;
   font-weight: 900;
-  color: #fff;
-  text-shadow: 0 2px 10px rgba(0,0,0,0.7);
-  z-index: 5;
-  min-height: 28px;
+  color: #ffd84d;
+  text-shadow: 0 0 20px rgba(255,216,77,0.8), 0 4px 8px rgba(0,0,0,0.6);
+  z-index: 7;
+  line-height: 1;
+  animation: timer-pulse 1s ease-in-out infinite;
 }
-.archery-tension { top: 12%; }
-.archery-controls {
-  position: absolute;
-  bottom: 7%;
-  right: 6%;
-  display: flex;
-  gap: 10px;
-  z-index: 6;
+.mole-timer.danger {
+  color: #ff4d6d;
+  text-shadow: 0 0 24px rgba(255,77,109,0.9), 0 4px 8px rgba(0,0,0,0.6);
+  animation: timer-danger 0.25s linear infinite;
 }
-.archery-ring-flash {
-  position: absolute;
-  pointer-events: none;
-  border-radius: 50%;
-  z-index: 3;
-  animation: ring-flash 0.6s ease-out forwards;
-  border: 3px solid #fff;
+@keyframes timer-pulse {
+  0%, 100% { transform: scale(1); }
+  50%       { transform: scale(1.15); }
 }
-@keyframes ring-flash {
-  0%   { transform: translate(-50%,-50%) scale(0.7); opacity: 1; box-shadow: 0 0 16px #fff; }
-  100% { transform: translate(-50%,-50%) scale(2); opacity: 0; }
+@keyframes timer-danger {
+  0%, 100% { transform: scale(1.2) translate(0,0); }
+  33%       { transform: scale(1.2) translate(-3px,1px); }
+  66%       { transform: scale(1.2) translate(3px,-1px); }
 }
 
+
+
+
+/* ============ CONFETTI ============ */
+.confetti-wrap {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 9999;
+  overflow: hidden;
+}
+.confetti-piece {
+  position: absolute;
+  top: -20px;
+  width: 10px;
+  height: 14px;
+  border-radius: 2px;
+  opacity: 0;
+  animation: confetti-fall linear forwards;
+}
+@keyframes confetti-fall {
+  0%   { transform: translateY(0) rotate(0deg) scaleX(1);   opacity: 1; }
+  80%  { opacity: 1; }
+  100% { transform: translateY(110vh) rotate(720deg) scaleX(-1); opacity: 0; }
+}
+
+/* ============ EDIT MEMBERS ============ */
+.edit-info {
+  text-align: center;
+  color: var(--c-text-dim);
+  font-size: 14px;
+  margin-bottom: 20px;
+}
+.edit-member-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: center;
+  max-width: 900px;
+  margin: 0 auto 24px;
+}
+.edit-section-title {
+  text-align: center;
+  font-size: 15px;
+  font-weight: 800;
+  color: var(--c-accent);
+  letter-spacing: 0.08em;
+  margin: 16px 0 10px;
+}
+.edit-fixed-row {
+  display: flex;
+  gap: 16px;
+  justify-content: center;
+  margin-bottom: 8px;
+}
+.edit-fixed-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.edit-fixed-item label {
+  font-size: 14px;
+  font-weight: 800;
+  color: var(--c-text-dim);
+  white-space: nowrap;
+}
+.edit-fixed-item .edit-input { width: 100px; }
+.edit-member-chip {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--c-bg-3);
+  border: 1px solid var(--c-border);
+  border-radius: 999px;
+  padding: 8px 16px;
+  font-size: 16px;
+  font-weight: 700;
+}
+.edit-member-chip .del-btn {
+  background: none;
+  border: none;
+  color: var(--c-muted);
+  cursor: pointer;
+  font-size: 16px;
+  line-height: 1;
+  padding: 0;
+  transition: color 0.15s;
+}
+.edit-member-chip .del-btn:hover { color: var(--team-a); }
+.edit-add-row {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  margin-bottom: 20px;
+}
+.edit-input {
+  font-family: inherit;
+  font-size: 16px;
+  font-weight: 700;
+  background: var(--c-bg-2);
+  border: 1px solid var(--c-border);
+  border-radius: 10px;
+  color: var(--c-text);
+  padding: 12px 18px;
+  outline: none;
+  width: 180px;
+  transition: border-color 0.15s;
+}
+.edit-input:focus { border-color: var(--c-accent); }
+.edit-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+}
 /* responsive scaling for small screens */
 @media (max-width: 1100px) {
   .salad-grid { grid-template-columns: repeat(4, 1fr); }
@@ -2405,6 +2282,7 @@ body {
     <div class="main-buttons">
       <button class="btn" onclick="goToSalad()">시작하기</button>
       <button class="btn secondary" onclick="goToHistory()">지난 기록</button>
+      <button class="btn secondary" onclick="goToEditMembers()">👥 멤버 편집</button>
     </div>
     <div class="main-credits">LUNCH SQUAD · 매월 1일 추첨</div>
   </div>
@@ -2535,7 +2413,7 @@ body {
   <!-- ============ CARD DEALING GAME ============ -->
   <div id="game-card" class="game-screen">
     <div class="game-header">
-      <h2>🎴 카드 딜링</h2>
+      <h2>🔮 운명의 타로</h2>
       <div class="game-status">
         <span>다음 차례:</span>
         <span class="current-name" id="card-current">-</span>
@@ -2588,47 +2466,6 @@ body {
   </div>
 
 
-  <!-- ============ DART GAME 🎯 ============ -->
-  <div id="game-dart" class="game-screen">
-    <div class="game-header">
-      <h2>🎯 다트 던지기</h2>
-      <div class="game-status">
-        <span>다음 차례:</span>
-        <span class="current-name" id="dart-current">-</span>
-      </div>
-      <button class="btn secondary" onclick="goToMain()">메인으로</button>
-    </div>
-    <div class="game-body">
-      <div class="name-panel" id="dart-names"></div>
-      <div class="game-stage">
-        <div class="dart-stage">
-          <div class="dart-spotlight"></div>
-          <div class="dart-board-wrap">
-            <div class="dart-board" id="dart-board">
-              <div class="dart-ring-mid"></div>
-              <div class="dart-ring-inner"></div>
-              <div class="dart-bullseye"></div>
-            </div>
-            <span class="dart-quad ql-a">A</span>
-            <span class="dart-quad ql-b">B</span>
-            <span class="dart-quad ql-c">C</span>
-            <span class="dart-quad ql-d">D</span>
-          </div>
-          <div class="dart-aim-track">
-            <div class="dart-aim" id="dart-aim">▼</div>
-          </div>
-          <div class="dart-tension" id="dart-tension" style="display:none">두구두구...</div>
-          <div class="dart-result" id="dart-result">왼쪽에서 자기 이름을 클릭하세요</div>
-          <div class="dart-controls">
-            <button class="btn" id="dart-throw" onclick="startDartAim()" style="display:none">🎯 THROW!</button>
-            <button class="btn danger" id="dart-stop" onclick="stopDartAim()" style="display:none">STOP!</button>
-          </div>
-        </div>
-      </div>
-      <div class="teams-panel" id="dart-teams"></div>
-    </div>
-  </div>
-
   <!-- ============ CLAW MACHINE 🕹️ ============ -->
   <div id="game-claw" class="game-screen">
     <div class="game-header">
@@ -2655,13 +2492,9 @@ body {
           <div class="claw-arm" id="claw-arm">
             <div class="claw-head" id="claw-head"><div class="claw-base"></div></div>
           </div>
-          <div class="claw-prizes" id="claw-prizes">
-            <div class="claw-prize team-a" data-team="A"><span class="pz-letter">A</span></div>
-            <div class="claw-prize team-b" data-team="B"><span class="pz-letter">B</span></div>
-            <div class="claw-prize team-c" data-team="C"><span class="pz-letter">C</span></div>
-            <div class="claw-prize team-d" data-team="D"><span class="pz-letter">D</span></div>
-          </div>
+          <div class="claw-prizes" id="claw-prizes"></div>
           <div class="claw-chute"></div>
+          <div class="claw-timer"   id="claw-timer"   style="display:none">3</div>
           <div class="claw-tension" id="claw-tension" style="display:none">두구두구...</div>
           <div class="claw-result" id="claw-result">왼쪽에서 자기 이름을 클릭하세요</div>
           <div class="claw-controls">
@@ -2682,7 +2515,10 @@ body {
         <span>다음 차례:</span>
         <span class="current-name" id="mole-current">-</span>
       </div>
-      <button class="btn secondary" onclick="goToMain()">메인으로</button>
+      <div style="display:flex;gap:10px;align-items:center;">
+        <button class="btn" id="mole-start" onclick="startMoleGame()" style="display:none">🔨 시작!</button>
+        <button class="btn secondary" onclick="goToMain()">메인으로</button>
+      </div>
     </div>
     <div class="game-body">
       <div class="name-panel" id="mole-names"></div>
@@ -2691,13 +2527,17 @@ body {
           <div class="mole-banner">두더지를 잡아라!</div>
           <div class="mole-msg" id="mole-msg">왼쪽에서 자기 이름을 클릭하세요</div>
           <div class="mole-tension" id="mole-tension" style="display:none">빠르게! 빠르게!</div>
+          <div class="mole-timer" id="mole-timer" style="display:none">3</div>
           <div class="mole-grid" id="mole-grid">
-            <div class="mole-hole"><div class="mole" data-hole="0"><div class="mole-face"><div class="mole-eyes"></div><span class="mole-team-letter">?</span></div></div></div>
-            <div class="mole-hole"><div class="mole" data-hole="1"><div class="mole-face"><div class="mole-eyes"></div><span class="mole-team-letter">?</span></div></div></div>
-            <div class="mole-hole"><div class="mole" data-hole="2"><div class="mole-face"><div class="mole-eyes"></div><span class="mole-team-letter">?</span></div></div></div>
-            <div class="mole-hole"><div class="mole" data-hole="3"><div class="mole-face"><div class="mole-eyes"></div><span class="mole-team-letter">?</span></div></div></div>
-            <div class="mole-hole"><div class="mole" data-hole="4"><div class="mole-face"><div class="mole-eyes"></div><span class="mole-team-letter">?</span></div></div></div>
-            <div class="mole-hole"><div class="mole" data-hole="5"><div class="mole-face"><div class="mole-eyes"></div><span class="mole-team-letter">?</span></div></div></div>
+            <div class="mole-hole"><div class="mole" data-hole="0"><div class="mole-ears"><div class="ear-inner left"></div><div class="ear-inner right"></div></div><div class="mole-face"><div class="mole-eyes"></div><div class="mole-nose"></div><span class="mole-team-letter">?</span></div></div></div>
+            <div class="mole-hole"><div class="mole" data-hole="1"><div class="mole-ears"><div class="ear-inner left"></div><div class="ear-inner right"></div></div><div class="mole-face"><div class="mole-eyes"></div><div class="mole-nose"></div><span class="mole-team-letter">?</span></div></div></div>
+            <div class="mole-hole"><div class="mole" data-hole="2"><div class="mole-ears"><div class="ear-inner left"></div><div class="ear-inner right"></div></div><div class="mole-face"><div class="mole-eyes"></div><div class="mole-nose"></div><span class="mole-team-letter">?</span></div></div></div>
+            <div class="mole-hole"><div class="mole" data-hole="3"><div class="mole-ears"><div class="ear-inner left"></div><div class="ear-inner right"></div></div><div class="mole-face"><div class="mole-eyes"></div><div class="mole-nose"></div><span class="mole-team-letter">?</span></div></div></div>
+            <div class="mole-hole"><div class="mole" data-hole="4"><div class="mole-ears"><div class="ear-inner left"></div><div class="ear-inner right"></div></div><div class="mole-face"><div class="mole-eyes"></div><div class="mole-nose"></div><span class="mole-team-letter">?</span></div></div></div>
+            <div class="mole-hole"><div class="mole" data-hole="5"><div class="mole-ears"><div class="ear-inner left"></div><div class="ear-inner right"></div></div><div class="mole-face"><div class="mole-eyes"></div><div class="mole-nose"></div><span class="mole-team-letter">?</span></div></div></div>
+            <div class="mole-hole"><div class="mole" data-hole="6"><div class="mole-ears"><div class="ear-inner left"></div><div class="ear-inner right"></div></div><div class="mole-face"><div class="mole-eyes"></div><div class="mole-nose"></div><span class="mole-team-letter">?</span></div></div></div>
+            <div class="mole-hole"><div class="mole" data-hole="7"><div class="mole-ears"><div class="ear-inner left"></div><div class="ear-inner right"></div></div><div class="mole-face"><div class="mole-eyes"></div><div class="mole-nose"></div><span class="mole-team-letter">?</span></div></div></div>
+            <div class="mole-hole"><div class="mole" data-hole="8"><div class="mole-ears"><div class="ear-inner left"></div><div class="ear-inner right"></div></div><div class="mole-face"><div class="mole-eyes"></div><div class="mole-nose"></div><span class="mole-team-letter">?</span></div></div></div>
           </div>
         </div>
       </div>
@@ -2705,43 +2545,8 @@ body {
     </div>
   </div>
 
-  <!-- ============ ARCHERY 🏹 ============ -->
-  <div id="game-archery" class="game-screen">
-    <div class="game-header">
-      <h2>🏹 양궁</h2>
-      <div class="game-status">
-        <span>다음 차례:</span>
-        <span class="current-name" id="archery-current">-</span>
-      </div>
-      <button class="btn secondary" onclick="goToMain()">메인으로</button>
-    </div>
-    <div class="game-body">
-      <div class="name-panel" id="archery-names"></div>
-      <div class="game-stage">
-        <div class="archery-stage">
-          <div class="archery-mountain"></div>
-          <div class="archery-grass"></div>
-          <div class="archery-wind">바람 ~~ 잔잔</div>
-          <div class="archery-result" id="archery-result">왼쪽에서 자기 이름을 클릭하세요</div>
-          <div class="archery-tension" id="archery-tension" style="display:none">집중...</div>
-          <div class="archery-target-stand"></div>
-          <div class="archery-target-wrap">
-            <div class="archery-target moving" id="archery-target"></div>
-          </div>
-          <div class="archer" id="archer">🏹</div>
-          <div class="archery-power-label">파워</div>
-          <div class="archery-power-bar"><div class="archery-power-fill" id="archery-power-fill"></div></div>
-          <div class="archery-controls">
-            <button class="btn" id="archery-shoot" onclick="startArcheryPower()" style="display:none">🏹 SHOOT!</button>
-            <button class="btn danger" id="archery-release" onclick="releaseArchery()" style="display:none">RELEASE!</button>
-          </div>
-        </div>
-      </div>
-      <div class="teams-panel" id="archery-teams"></div>
-    </div>
-  </div>
-
   <!-- ============ RESULT SCREEN ============ -->
+  <div class="confetti-wrap" id="confetti-wrap"></div>
   <div id="screen-result" class="screen">
     <div class="result-banner">뽑기 완료!</div>
     <div class="result-month" id="result-month"></div>
@@ -2751,6 +2556,33 @@ body {
       <button class="btn" id="save-btn" onclick="saveResult()">💾 이번 달 결과 저장</button>
       <button class="btn secondary" onclick="goToMain()">🏠 메인으로</button>
       <button class="btn danger" onclick="restartFresh()">🔄 다시 뽑기</button>
+    </div>
+  </div>
+
+  <!-- ============ EDIT MEMBERS ============ -->
+  <div id="screen-edit" class="screen">
+    <div class="title-bar">
+      <h2>👥 멤버 편집</h2>
+      <div class="controls">
+        <button class="btn secondary" onclick="goToMain()">← 뒤로</button>
+      </div>
+    </div>
+    <div class="edit-info">고정 멤버와 랜덤 풀 멤버를 모두 편집할 수 있어요.</div>
+    <div class="edit-section-title">👑 고정 멤버 (조 리더 · 최소 1명, 최대 4명)</div>
+    <div class="edit-member-grid" id="edit-fixed-grid"></div>
+    <div class="edit-add-row">
+      <input class="edit-input" id="edit-new-fixed" type="text" placeholder="리더 이름 입력" maxlength="6" />
+      <button class="btn" onclick="addFixedMember()">+ 추가</button>
+    </div>
+    <div class="edit-section-title">🎲 랜덤 풀 멤버</div>
+    <div class="edit-member-grid" id="edit-member-grid"></div>
+    <div class="edit-add-row">
+      <input class="edit-input" id="edit-new-name" type="text" placeholder="이름 입력" maxlength="6" />
+      <button class="btn" onclick="addEditMember()">+ 추가</button>
+    </div>
+    <div class="edit-actions">
+      <button class="btn" onclick="saveEditMembers()">💾 저장</button>
+      <button class="btn secondary" onclick="resetEditMembers()">기본값 초기화</button>
     </div>
   </div>
 
@@ -2772,21 +2604,39 @@ body {
 /* ============================================================
    POINT 1: CONSTANTS
    ============================================================ */
-const RANDOM_POOL = [
+const DEFAULT_POOL = [
   '경희','미선','다은','가빈','소리','선영','지은','희정',
   '소희','아라','다나','서현','주현','지영','민경','소연'
 ];
-const FIXED = { A: '이석제', B: '송진석', C: '임성진' };
+function loadMemberPool() {
+  try {
+    const s = localStorage.getItem('lunchSquadMembersV1');
+    if (s) { const p = JSON.parse(s); if (Array.isArray(p) && p.length) return p; }
+  } catch(e) {}
+  return [...DEFAULT_POOL];
+}
+let RANDOM_POOL = loadMemberPool();
+const TEAM_LETTERS = ['A','B','C','D'];
+const DEFAULT_FIXED = ['석제', '진석', '성진'];
+function loadFixed() {
+  try {
+    const s = localStorage.getItem('lunchSquadFixedV1');
+    if (s) {
+      const f = JSON.parse(s);
+      if (Array.isArray(f) && f.length >= 1 && f.length <= 4) return f;
+    }
+  } catch(e) {}
+  return [...DEFAULT_FIXED];
+}
+let FIXED = loadFixed();
 
 const GAMES = [
   { id: 'ladder',   name: '사다리 타기',      icon: '🪜' },
   { id: 'basket',   name: '농구 슛',           icon: '🏀' },
-  { id: 'card',     name: '카드 딜링',         icon: '🎴' },
+  { id: 'card',     name: '운명의 타로',         icon: '🔮' },
   { id: 'roulette', name: '운명의 슬롯',       icon: '🎰' },
-  { id: 'dart',     name: '다트 던지기',       icon: '🎯' },
   { id: 'claw',     name: '인형뽑기',          icon: '🕹️' },
   { id: 'mole',     name: '두더지 잡기',       icon: '🔨' },
-  { id: 'archery',  name: '양궁',              icon: '🏹' }
 ];
 
 const STORAGE_KEY = 'lunchSquadHistoryV1';
@@ -2922,12 +2772,13 @@ function setupRound() {
   state.itemTeams = buildItemTeams(state.teamCounts);
   state.pickQueue = shuffle(state.attendingPool);
   state.picks = {};
-  state.teamRoster = {
-    A: [{ name: FIXED.A, leader: true }],
-    B: [{ name: FIXED.B, leader: true }],
-    C: [{ name: FIXED.C, leader: true }],
-    D: []
-  };
+  state.teamRoster = { A: [], B: [], C: [], D: [] };
+  FIXED.forEach((name, i) => {
+    const t = TEAM_LETTERS[i];
+    if (state.teamRoster[t] !== undefined) {
+      state.teamRoster[t] = [{ name, leader: true }];
+    }
+  });
   state.currentPicker = null;
   state.saved = false;
 }
@@ -2935,6 +2786,97 @@ function setupRound() {
 /* ============================================================
    POINT 5: NAVIGATION
    ============================================================ */
+
+/* ============ EDIT MEMBERS ============ */
+let editPool = [];
+
+let editFixed = [];
+
+function goToEditMembers() {
+  editPool  = [...RANDOM_POOL];
+  editFixed = [...FIXED];
+  renderEditGrid();
+  renderEditFixedGrid();
+  showScreen('screen-edit');
+}
+
+function renderEditFixedGrid() {
+  const grid = $('edit-fixed-grid');
+  grid.innerHTML = '';
+  editFixed.forEach((name, i) => {
+    const team = TEAM_LETTERS[i];
+    const chip = document.createElement('div');
+    chip.className = 'edit-member-chip';
+    const canDel = editFixed.length > 1;
+    chip.innerHTML = `<span style="color:var(--c-accent);margin-right:2px">${team}조</span><span>${name}</span>`
+      + (canDel ? `<button class="del-btn" onclick="removeFixedMember(${i})">✕</button>` : '');
+    grid.appendChild(chip);
+  });
+}
+
+function removeFixedMember(i) {
+  if (editFixed.length <= 1) return;
+  editFixed.splice(i, 1);
+  renderEditFixedGrid();
+}
+
+function addFixedMember() {
+  if (editFixed.length >= 4) { alert('리더는 최대 4명까지 가능해요!'); return; }
+  const input = $('edit-new-fixed');
+  const name = input.value.trim();
+  if (!name) return;
+  editFixed.push(name);
+  input.value = '';
+  renderEditFixedGrid();
+}
+
+function renderEditGrid() {
+  const grid = $('edit-member-grid');
+  grid.innerHTML = '';
+  editPool.forEach((name, i) => {
+    const chip = document.createElement('div');
+    chip.className = 'edit-member-chip';
+    chip.innerHTML = `<span>${name}</span><button class="del-btn" onclick="removeEditMember(${i})">✕</button>`;
+    grid.appendChild(chip);
+  });
+}
+
+function removeEditMember(i) {
+  editPool.splice(i, 1);
+  renderEditGrid();
+}
+
+function addEditMember() {
+  const input = $('edit-new-name');
+  const name = input.value.trim();
+  if (!name) return;
+  if (editPool.includes(name)) { input.value = ''; return; }
+  editPool.push(name);
+  input.value = '';
+  renderEditGrid();
+}
+
+function saveEditMembers() {
+  if (editPool.length < 4) { alert('멤버는 최소 4명 이상이어야 해요!'); return; }
+  if (editFixed.length < 1) { alert('고정 멤버(리더)는 최소 1명 이상이어야 해요!'); return; }
+  FIXED = [...editFixed];
+  RANDOM_POOL = [...editPool];
+  try {
+    localStorage.setItem('lunchSquadMembersV1', JSON.stringify(RANDOM_POOL));
+    localStorage.setItem('lunchSquadFixedV1',   JSON.stringify(FIXED));
+  } catch(e) {}
+  showScreen('screen-main');
+  $('main-month').textContent = getCurrentMonthLabel();
+}
+
+function resetEditMembers() {
+  if (!confirm('기본 멤버 목록으로 초기화할까요?')) return;
+  editPool  = [...DEFAULT_POOL];
+  editFixed = [...DEFAULT_FIXED];
+  renderEditGrid();
+  renderEditFixedGrid();
+}
+
 function goToMain() {
   showScreen('screen-main');
   $('main-month').textContent = getCurrentMonthLabel();
@@ -2959,7 +2901,8 @@ function renderSaladGrid() {
   const grid = $('salad-grid');
   grid.innerHTML = '';
   // Fixed members as locked cards (same size as random ones)
-  Object.entries(FIXED).forEach(([team, name]) => {
+  FIXED.forEach((name, i) => {
+    const team = TEAM_LETTERS[i];
     const card = document.createElement('div');
     card.className = 'salad-card fixed';
     card.innerHTML = `
@@ -2992,12 +2935,15 @@ function renderSaladGrid() {
 function updateSaladSummary() {
   const k = state.saladSet.size;
   const counts = calculateTeamCounts([...state.saladSet]);
-  const a = counts.aRandom + 1, b = counts.bRandom + 1, c = counts.cRandom + 1;
+  const a = counts.aRandom + (FIXED.length >= 1 ? 1 : 0);
+  const b = counts.bRandom + (FIXED.length >= 2 ? 1 : 0);
+  const cv = counts.cRandom + (FIXED.length >= 3 ? 1 : 0);
+  const dLeader = FIXED.length >= 4 ? 1 : 0;
   let text = `샐러드: ${k}명 / 참여 랜덤 풀: ${RANDOM_POOL.length - k}명 → `;
   if (counts.dExists) {
-    text += `A조 ${a} · B조 ${b} · C조 ${c} · D조 ${counts.dRandom} (총 ${a + b + c + counts.dRandom}명)`;
+    text += `A조 ${a} · B조 ${b} · C조 ${cv} · D조 ${counts.dRandom + dLeader} (총 ${a + b + cv + counts.dRandom + dLeader}명)`;
   } else {
-    text += `A조 ${a} · B조 ${b} · C조 ${c} (D조 폐지, 총 ${a + b + c}명)`;
+    text += `A조 ${a} · B조 ${b} · C조 ${cv} (D조 폐지, 총 ${a + b + cv}명)`;
   }
   $('salad-summary').textContent = text;
 }
@@ -3135,10 +3081,8 @@ function launchGame() {
   if (id === 'basket')   return launchBasket();
   if (id === 'card')     return launchCard();
   if (id === 'roulette') return launchRoulette();
-  if (id === 'dart')     return launchDart();
   if (id === 'claw')     return launchClaw();
   if (id === 'mole')     return launchMole();
-  if (id === 'archery')  return launchArchery();
 }
 
 /* ============================================================
@@ -3167,17 +3111,13 @@ function renderNamePanel(panelId, onClickName) {
    - state[gameKey + 'Order'] / state[gameKey + 'OrderIdx'] 사용
 */
 const ORDER_GAME_NAME_HANDLERS = {
-  dart:    (n) => onDartName(n),
   claw:    (n) => onClawName(n),
   mole:    (n) => onMoleName(n),
-  archery: (n) => onArcheryName(n),
 };
 
 function isOrderedGameRunning(gameKey) {
-  if (gameKey === 'dart')    return !!state.dartAimRunning;
   if (gameKey === 'claw')    return !!state.clawMoveRunning;
   if (gameKey === 'mole')    return !!state.moleRunning;
-  if (gameKey === 'archery') return !!state.archeryPowerRunning;
   return false;
 }
 
@@ -3833,19 +3773,45 @@ function renderCardSpread() {
   const wrap = $('card-spread');
   wrap.innerHTML = '';
   const n = state.attendingPool.length;
-  // Saju-style symbols rotate per card for variety
   const symbols = ['☾', '✦', '☉', '✧', '⚝', '❋', '✺', '☽'];
-  // Single row: only UNPICKED cards remain (picked ones are removed for next turn)
+
+  // 남은 카드 목록
+  const remaining = [];
   for (let i = 0; i < n; i++) {
-    const isPicked = state.cardPicked && state.cardPicked[i];
-    if (isPicked) continue; // 다음 차례 진행 시 뽑힌 카드는 제거
-    const c = document.createElement('div');
-    c.className = 'spread-card';
-    c.dataset.idx = i;
-    if (!state.currentPicker) c.classList.add('disabled');
-    const team = '';
-    const sym = symbols[i % symbols.length];
-    c.innerHTML = `
+    if (!state.cardPicked || !state.cardPicked[i]) remaining.push(i);
+  }
+  const count = remaining.length;
+  const useArc = count > 4;
+
+  wrap.className = 'card-spread' + (useArc ? ' arc-mode' : '');
+
+  // 포물선 좌표 계산 (가운데 낮고 양끝 높음)
+  const halfSpan  = Math.min(42, count * 2.8); // % 단위 반폭
+  const curveH    = 65;  // 양끝이 중앙보다 올라오는 높이(px)
+  const maxTilt   = 38;  // 양끝 카드 최대 기울기(도)
+
+  remaining.forEach((idx, pos) => {
+    const el = document.createElement('div');
+    el.className = 'spread-card';
+    el.dataset.idx = idx;
+    if (!state.currentPicker) el.classList.add('disabled');
+
+    if (useArc) {
+      const t = count > 1 ? (2 * pos / (count - 1) - 1) : 0; // -1 ~ +1
+      const xPct    = (50 + t * halfSpan).toFixed(1) + '%';
+      const bottomY = (10 + curveH * (1 - t * t)).toFixed(1) + 'px'; // 역포물선(가운데↑ 끝↓)
+      const angle   = (t * maxTilt).toFixed(1);                     // 좌→-틸트, 우→+틸트
+
+      el.style.setProperty('--arc-x', xPct);
+      el.style.setProperty('--arc-y', bottomY);
+      el.style.setProperty('--arc-angle', angle + 'deg');
+      // 가운데 카드가 위에 (z-index)
+      const distFromCenter = Math.abs(pos - (count - 1) / 2);
+      el.style.zIndex = Math.round(count - distFromCenter);
+    }
+
+    const sym = symbols[idx % symbols.length];
+    el.innerHTML = `
       <div class="spread-card-inner">
         <div class="card-back">
           <div class="card-corner tl">✦</div>
@@ -3858,12 +3824,12 @@ function renderCardSpread() {
           </div>
           <div class="card-symbol">${sym}</div>
         </div>
-        <div class="card-face team-${team ? team.toLowerCase() : ''}">${team}</div>
+        <div class="card-face"></div>
       </div>
     `;
-    c.onclick = () => onCardClick(i, c);
-    wrap.appendChild(c);
-  }
+    el.onclick = () => onCardClick(idx, el);
+    wrap.appendChild(el);
+  });
 }
 
 function onCardClick(i, el) {
@@ -3996,11 +3962,34 @@ function teamColor(t) {
   return ({ A: '#ff004d', B: '#29adff', C: '#ffec27', D: '#00e436' })[t] || '#fff';
 }
 
+
+function launchConfetti() {
+  const wrap = $('confetti-wrap');
+  wrap.innerHTML = '';
+  const colors = ['#ff4d6d','#ffd84d','#4cc9f0','#06d6a0','#ff8a3d','#c77dff','#fff'];
+  const count = 90;
+  for (let i = 0; i < count; i++) {
+    const el = document.createElement('div');
+    el.className = 'confetti-piece';
+    el.style.left = Math.random() * 100 + '%';
+    el.style.background = colors[Math.floor(Math.random() * colors.length)];
+    const dur = 2.2 + Math.random() * 1.8;
+    el.style.animationDuration = dur + 's';
+    el.style.animationDelay   = Math.random() * 0.8 + 's';
+    el.style.width  = (8 + Math.random() * 8) + 'px';
+    el.style.height = (12 + Math.random() * 8) + 'px';
+    el.style.borderRadius = Math.random() > 0.5 ? '50%' : '2px';
+    wrap.appendChild(el);
+  }
+  setTimeout(() => { wrap.innerHTML = ''; }, 4500);
+}
+
 /* ============================================================
    POINT 15: RESULT SCREEN
    ============================================================ */
 function showResultScreen() {
   showScreen('screen-result');
+  launchConfetti();
   $('result-month').textContent = getCurrentMonthLabel();
   const grid = $('result-grid');
   grid.className = 'result-grid' + (state.teamCounts.dExists ? '' : ' three-cols');
@@ -4147,199 +4136,64 @@ function deleteHistoryEntry(id) {
 }
 
 
-/* ============================================================
-   POINT 18: DART GAME 🎯 (PUB STYLE)
-   ============================================================ */
-function launchDart() {
-  showScreen('game-dart');
-  state.dartCapacity = {
-    A: state.teamCounts.aRandom,
-    B: state.teamCounts.bRandom,
-    C: state.teamCounts.cRandom,
-    D: state.teamCounts.dRandom
-  };
-  state.dartAimRunning = false;
-  state.dartAimRaf = null;
-  // 시작과 동시에 무작위 순서 결정 (농구슛과 동일)
-  state.dartOrder = shuffle(state.attendingPool);
-  state.dartOrderIdx = 0;
-  renderOrderedNamePanel('dart-names', 'dart');
-  renderTeamsPanel('dart-teams');
-  $('dart-current').textContent = '-';
-  $('dart-result').className = 'dart-result';
-  $('dart-result').textContent = '왼쪽 "랜덤 섞기"로 순서 다시 섞을 수 있어요';
-  $('dart-throw').style.display = 'none';
-  $('dart-stop').style.display = 'none';
-  $('dart-tension').style.display = 'none';
-  resetDartBoard();
-  updateDartFullness();
-  // 첫 사람 자동 활성화
-  activateNextOrderedTurn('dart');
-}
+function initClawPrizes() {
+  const container = $('claw-prizes');
+  container.innerHTML = '';
 
-function onDartName(name) {
-  state.currentPicker = name;
-  $('dart-current').textContent = name;
-  renderOrderedNamePanel('dart-names', 'dart');
-  $('dart-throw').style.display = '';
-  $('dart-throw').disabled = false;
-  $('dart-stop').style.display = 'none';
-  $('dart-tension').style.display = 'none';
-  $('dart-result').className = 'dart-result';
-  $('dart-result').textContent = `${name}님, THROW로 조준 시작!`;
-  resetDartBoard();
-}
+  const ANIMALS = { A: '🐱', B: '🐧', C: '🐰', D: '🐸' };
+  const teams = ['A','B','C','D'];
 
-function resetDartBoard() {
-  document.querySelectorAll('.dart-thrown').forEach(el => el.remove());
-  document.querySelectorAll('.dart-quad').forEach(el => el.classList.remove('flash'));
-  const aim = $('dart-aim');
-  if (aim) aim.style.left = '50%';
-}
-
-function updateDartFullness() {
-  const board = $('dart-board');
-  if (!board) return;
-  let fullList = [];
-  ['A','B','C','D'].forEach(t => { if (state.dartCapacity[t] <= 0) fullList.push(t); });
-  fullList.sort();
-  board.className = 'dart-board';
-  if (fullList.length > 0) {
-    board.classList.add('full-' + fullList.join('').toLowerCase());
-  }
-  ['A','B','C','D'].forEach(t => {
-    const lbl = document.querySelector('.dart-quad.ql-' + t.toLowerCase());
-    if (!lbl) return;
-    if (state.dartCapacity[t] <= 0) lbl.classList.add('quad-x');
-    else lbl.classList.remove('quad-x');
+  // 팀별 최대 4개, 최소 1개 인형 생성
+  const pool = [];
+  teams.forEach(t => {
+    const cap = state.clawCapacity[t];
+    if (cap <= 0) return;
+    const n = Math.max(1, Math.min(cap, 4));
+    for (let i = 0; i < n; i++) pool.push(t);
   });
-}
 
-function startDartAim() {
-  if (!state.currentPicker) return;
-  $('dart-throw').style.display = 'none';
-  $('dart-stop').style.display = '';
-  $('dart-stop').disabled = false;
-  $('dart-tension').style.display = '';
-  $('dart-tension').classList.add('shake');
-  $('dart-tension').textContent = '두구두구...';
-  $('dart-result').className = 'dart-result';
-  $('dart-result').textContent = '';
-  state.dartAimRunning = true;
-  state.dartAimStart = performance.now();
-  const aim = $('dart-aim');
-  const period = 600;
-  const tick = (now) => {
-    if (!state.dartAimRunning) return;
-    const t = ((now - state.dartAimStart) % period) / period;
-    const wave = (Math.sin(t * 2 * Math.PI - Math.PI / 2) + 1) / 2;
-    const leftPct = 6 + wave * 88;
-    aim.style.left = leftPct + '%';
-    state.dartAimRaf = requestAnimationFrame(tick);
-  };
-  state.dartAimRaf = requestAnimationFrame(tick);
-}
-
-function stopDartAim() {
-  if (!state.dartAimRunning) return;
-  state.dartAimRunning = false;
-  if (state.dartAimRaf) cancelAnimationFrame(state.dartAimRaf);
-  $('dart-stop').disabled = true;
-  $('dart-tension').classList.remove('shake');
-
-  const aim = $('dart-aim');
-  const track = aim.parentElement;
-  const aimRect = aim.getBoundingClientRect();
-  const trackRect = track.getBoundingClientRect();
-  const arrowPct = ((aimRect.left + aimRect.width / 2 - trackRect.left) / trackRect.width) * 100;
-
-  const buckets = [
-    { team: 'D', center: 25 },
-    { team: 'A', center: 75 },
-    { team: 'C', center: 25 },
-    { team: 'B', center: 75 }
-  ];
-  // 위쪽=A/D, 아래쪽=B/C: aim X로는 좌우만 결정. 위/아래는 랜덤이지만 capacity 고려
-  const leftActive = ['A','B','C','D'].filter(t => state.dartCapacity[t] > 0 && (t === 'D' || t === 'C'));
-  const rightActive = ['A','B','C','D'].filter(t => state.dartCapacity[t] > 0 && (t === 'A' || t === 'B'));
-  let chosenTeam;
-  if (arrowPct < 50) {
-    if (leftActive.length > 0) {
-      chosenTeam = leftActive[Math.floor(Math.random() * leftActive.length)];
-    } else if (rightActive.length > 0) {
-      chosenTeam = rightActive[Math.floor(Math.random() * rightActive.length)];
-    }
-  } else {
-    if (rightActive.length > 0) {
-      chosenTeam = rightActive[Math.floor(Math.random() * rightActive.length)];
-    } else if (leftActive.length > 0) {
-      chosenTeam = leftActive[Math.floor(Math.random() * leftActive.length)];
-    }
+  // 랜덤 셔플
+  for (let i = pool.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [pool[i], pool[j]] = [pool[j], pool[i]];
   }
-  if (!chosenTeam) return;
-  state.dartCapacity[chosenTeam]--;
 
-  setTimeout(() => throwDart(arrowPct, chosenTeam), 250);
-}
+  // X·Y 슬롯 각각 균등 분할 후 독립 셔플 → X축·Y축 모두 겹치지 않음
+  const n = pool.length;
+  const xSlotW = 78 / n;
+  const ySlotH = 60 / n;
 
-function throwDart(fromPct, team) {
-  const stage = document.querySelector('.dart-stage');
-  const board = document.querySelector('.dart-board-wrap');
-  const aim = $('dart-aim');
-  const stageRect = stage.getBoundingClientRect();
-  const boardRect = board.getBoundingClientRect();
-  const aimRect = aim.getBoundingClientRect();
+  const xSlots = pool.map((_, i) => 4 + i * xSlotW + Math.random() * xSlotW * 0.7);
+  const ySlots = pool.map((_, i) => 4 + i * ySlotH + Math.random() * ySlotH * 0.7);
 
-  const startXPct = ((aimRect.left + aimRect.width/2) - stageRect.left) / stageRect.width * 100;
-  const startYPct = ((aimRect.top + aimRect.height/2) - stageRect.top) / stageRect.height * 100;
+  // 각각 독립 셔플
+  const shuffleArr = arr => {
+    for (let i = arr.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [arr[i], arr[j]] = [arr[j], arr[i]];
+    }
+  };
+  shuffleArr(xSlots);
+  shuffleArr(ySlots);
 
-  const boardCenterX = ((boardRect.left + boardRect.width/2) - stageRect.left) / stageRect.width * 100;
-  const boardCenterY = ((boardRect.top + boardRect.height/2) - stageRect.top) / stageRect.height * 100;
-  const halfPx = boardRect.width / 2;
-  // Each team's quadrant center is at angle: A=top-right, B=bottom-right, C=bottom-left, D=top-left
-  const angles = { A: -45, B: 45, C: 135, D: -135 };
-  const radPx = halfPx * 0.55;
-  const rad = angles[team] * Math.PI / 180;
-  const dartXPct = boardCenterX + (Math.sin(rad) * radPx) / stageRect.width * 100;
-  const dartYPct = boardCenterY - (Math.cos(rad) * radPx) / stageRect.height * 100;
+  pool.forEach((team, idx) => {
+    const l = xSlots[idx];  // X 슬롯 (겹침 없음)
+    const b = ySlots[idx];  // Y 슬롯 (겹침 없음)
 
-  const dart = document.createElement('div');
-  dart.className = 'dart-thrown';
-  dart.textContent = '🎯';
-  dart.style.left = startXPct + '%';
-  dart.style.top = startYPct + '%';
-  dart.style.transform = 'translate(-50%,-50%) rotate(0deg) scale(0.7)';
-  stage.appendChild(dart);
-  void dart.offsetWidth;
-  dart.classList.add('flying');
-  dart.style.left = dartXPct + '%';
-  dart.style.top = dartYPct + '%';
-  dart.style.transform = 'translate(-50%,-50%) rotate(720deg) scale(1)';
-
-  setTimeout(() => {
-    dart.classList.remove('flying');
-    dart.classList.add('wobble');
-    // flash the team's quadrant label
-    const lbl = document.querySelector('.dart-quad.ql-' + team.toLowerCase());
-    if (lbl) lbl.classList.add('flash');
-    $('dart-tension').style.display = 'none';
-    setTimeout(() => {
-      $('dart-result').className = 'dart-result big-reveal';
-      $('dart-result').innerHTML = `<span style="color:${teamColor(team)}">${team}조!</span>`;
-      setTimeout(() => {
-        commitItemPick(team, 'dart-current', 'dart-teams');
-        state.dartOrderIdx++;
-        renderOrderedNamePanel('dart-names', 'dart');
-        $('dart-stop').style.display = 'none';
-        $('dart-throw').style.display = 'none';
-        updateDartFullness();
-        resetDartBoard();
-        $('dart-result').className = 'dart-result';
-        if (isAllPicked()) finishGame();
-        else activateNextOrderedTurn('dart');
-      }, 1500);
-    }, 350);
-  }, 720);
+    const r = (Math.random() * 40) - 20; // -20 ~ +20deg
+    const div = document.createElement('div');
+    div.className = 'claw-prize team-' + team.toLowerCase();
+    div.dataset.team = team;
+    div.style.left      = l.toFixed(1) + '%';
+    div.style.bottom    = b.toFixed(1) + '%';
+    div.style.setProperty('--r', r.toFixed(1) + 'deg');
+    div.style.animationDelay = -(Math.random() * 1.8).toFixed(2) + 's';
+    div.dataset.initLeft   = l.toFixed(1) + '%';
+    div.dataset.initBottom = b.toFixed(1) + '%';
+    div.dataset.initRotate = r.toFixed(1) + 'deg';
+    div.innerHTML = `<span class="pz-face">${ANIMALS[team]}</span><span class="pz-letter">${team}</span>`;
+    container.appendChild(div);
+  });
 }
 
 /* ============================================================
@@ -4366,6 +4220,9 @@ function launchClaw() {
   $('claw-go').style.display = 'none';
   $('claw-stop').style.display = 'none';
   $('claw-tension').style.display = 'none';
+  if ($('claw-timer')) $('claw-timer').style.display = 'none';
+  if (state.clawCountdown) { clearInterval(state.clawCountdown); state.clawCountdown = null; }
+  initClawPrizes();
   resetClawScene();
   updateClawPrizesFullness();
   // 첫 사람 자동 활성화
@@ -4396,8 +4253,14 @@ function resetClawScene() {
   if (head) head.classList.remove('closed');
   document.querySelectorAll('.claw-prize').forEach(p => {
     p.classList.remove('taken');
-    p.style.transform = '';
-    p.style.top = '';
+    p.style.transition = '';
+    if (p.dataset.initLeft) {
+      p.style.left   = p.dataset.initLeft;
+      p.style.bottom = p.dataset.initBottom;
+      p.style.setProperty('--r', p.dataset.initRotate || '0deg');
+      p.style.transform = '';
+    }
+    // opacity는 건드리지 않음 (이미 집힌 인형은 opacity:0 유지)
   });
 }
 
@@ -4421,6 +4284,25 @@ function startClawMove() {
   $('claw-result').textContent = '';
   state.clawMoveRunning = true;
   state.clawMoveStart = performance.now();
+
+  // 3초 카운트다운
+  state.clawTimeLeft = 3;
+  const clawTimerEl = $('claw-timer');
+  clawTimerEl.textContent = state.clawTimeLeft;
+  clawTimerEl.className = 'claw-timer';
+  clawTimerEl.style.display = '';
+  if (state.clawCountdown) clearInterval(state.clawCountdown);
+  state.clawCountdown = setInterval(() => {
+    state.clawTimeLeft--;
+    clawTimerEl.textContent = state.clawTimeLeft;
+    if (state.clawTimeLeft <= 1) clawTimerEl.className = 'claw-timer danger';
+    if (state.clawTimeLeft <= 0) {
+      clearInterval(state.clawCountdown);
+      state.clawCountdown = null;
+      if (state.clawMoveRunning) stopClawMove();
+    }
+  }, 1000);
+
   const arm = $('claw-arm');
   arm.style.transition = 'none';
   const period = 720;
@@ -4439,6 +4321,8 @@ function stopClawMove() {
   if (!state.clawMoveRunning) return;
   state.clawMoveRunning = false;
   if (state.clawMoveRaf) cancelAnimationFrame(state.clawMoveRaf);
+  if (state.clawCountdown) { clearInterval(state.clawCountdown); state.clawCountdown = null; }
+  if ($('claw-timer')) $('claw-timer').style.display = 'none';
   $('claw-stop').disabled = true;
   $('claw-tension').classList.remove('shake');
 
@@ -4471,9 +4355,16 @@ function stopClawMove() {
   arm.style.transition = 'left 0.5s ease';
   arm.style.left = chosen.xPct + '%';
   setTimeout(() => {
-    // 2) Drop down
-    arm.style.transition = 'top 0.7s ease-in, height 0.7s ease-in';
-    arm.style.height = '60%';
+    // 2) 인형 위치 계산 후 정확히 그 위치까지만 내려감
+    const prizeRect = chosen.el.getBoundingClientRect();
+    const armTopAbs = stageRect.top + stageRect.height * 0.14;
+    const targetHPx  = Math.max(40, (prizeRect.top + prizeRect.height * 0.55) - armTopAbs);
+    const targetHPct = Math.min((targetHPx / stageRect.height * 100), 63).toFixed(1) + '%';
+    const dropMs     = Math.round(280 + (targetHPx / stageRect.height) * 480);
+    const liftPx     = Math.round(targetHPx + 90);
+
+    arm.style.transition = `height ${dropMs}ms ease-in`;
+    arm.style.height = targetHPct;
     setTimeout(() => {
       // 3) Close claw
       const head = $('claw-head');
@@ -4481,19 +4372,19 @@ function stopClawMove() {
       $('claw-tension').style.display = 'none';
       // 4) Lift up with prize
       setTimeout(() => {
-        arm.style.transition = 'top 0.55s ease-out, height 0.55s ease-out';
+        arm.style.transition = 'height 0.52s ease-out';
         arm.style.height = '36px';
         // Move prize visually with the claw
         const prizeEl = chosen.el;
         prizeEl.classList.add('taken');
-        prizeEl.style.transition = 'transform 0.55s ease-out';
-        prizeEl.style.transform = 'translateY(-220px) scale(0.92)';
+        prizeEl.style.transition = 'transform 0.52s ease-out';
+        prizeEl.style.transform = `translateY(-${liftPx}px) scale(0.92)`;
         setTimeout(() => {
           // 5) Slide arm to chute
           arm.style.transition = 'left 0.45s ease';
           arm.style.left = '88%';
           prizeEl.style.transition = 'transform 0.45s ease, opacity 0.4s ease';
-          prizeEl.style.transform = 'translate(' + (Math.round(stageRect.width * 0.86) - prizeEl.getBoundingClientRect().left + stageRect.left) + 'px, -220px) scale(0.92)';
+          prizeEl.style.transform = 'translate(' + (Math.round(stageRect.width * 0.86) - prizeEl.getBoundingClientRect().left + stageRect.left) + `px, -${liftPx}px) scale(0.92)`;
           // 6) Drop into chute
           setTimeout(() => {
             if (head) head.classList.remove('closed');
@@ -4515,7 +4406,7 @@ function stopClawMove() {
           }, 500);
         }, 600);
       }, 350);
-    }, 720);
+    }, dropMs + 60);
   }, 540);
 }
 
@@ -4541,6 +4432,8 @@ function launchMole() {
   $('mole-msg').className = 'mole-msg';
   $('mole-msg').textContent = '왼쪽 "랜덤 섞기"로 순서 다시 섞을 수 있어요';
   $('mole-tension').style.display = 'none';
+  if (state.moleCountdown) { clearInterval(state.moleCountdown); state.moleCountdown = null; }
+  if ($('mole-timer')) $('mole-timer').style.display = 'none';
   resetMoleHoles();
   // 첫 사람 자동 활성화
   activateNextOrderedTurn('mole');
@@ -4551,12 +4444,59 @@ function onMoleName(name) {
   $('mole-current').textContent = name;
   renderOrderedNamePanel('mole-names', 'mole');
   $('mole-msg').className = 'mole-msg';
-  $('mole-msg').textContent = `${name}님, 빠르게 두더지를 클릭하세요!`;
+  $('mole-msg').textContent = `${name}님, 준비되면 시작 버튼을 누르세요!`;
+  $('mole-tension').style.display = 'none';
+  $('mole-start').style.display = '';
+  resetMoleHoles();
+}
+
+function startMoleGame() {
+  $('mole-start').style.display = 'none';
+  $('mole-msg').textContent = `${state.currentPicker}님, 빠르게 두더지를 클릭하세요!`;
   $('mole-tension').style.display = '';
   $('mole-tension').classList.add('shake');
   $('mole-tension').textContent = '빠르게! 빠르게!';
-  resetMoleHoles();
+
+  // 3초 카운트다운
+  state.moleTimeLeft = 3;
+  const timerEl = $('mole-timer');
+  timerEl.textContent = state.moleTimeLeft;
+  timerEl.className = 'mole-timer';
+  timerEl.style.display = '';
+  if (state.moleCountdown) clearInterval(state.moleCountdown);
+  state.moleCountdown = setInterval(() => {
+    state.moleTimeLeft--;
+    timerEl.textContent = state.moleTimeLeft;
+    if (state.moleTimeLeft <= 1) timerEl.className = 'mole-timer danger';
+    if (state.moleTimeLeft <= 0) {
+      clearInterval(state.moleCountdown);
+      state.moleCountdown = null;
+      onMoleTimeout();
+    }
+  }, 1000);
+
   startMoleSpawning();
+}
+
+function onMoleTimeout() {
+  stopMoleSpawning();
+  $('mole-timer').style.display = 'none';
+  $('mole-tension').style.display = 'none';
+  const active = getActiveMoleTeams();
+  if (active.length === 0) return;
+  const team = active[Math.floor(Math.random() * active.length)];
+  state.moleCapacity[team]--;
+  $('mole-msg').className = 'mole-msg big-reveal';
+  $('mole-msg').innerHTML = `<span style="color:${teamColor(team)}">⏰ ${team}조!</span>`;
+  setTimeout(() => {
+    commitItemPick(team, 'mole-current', 'mole-teams');
+    state.moleOrderIdx++;
+    renderOrderedNamePanel('mole-names', 'mole');
+    resetMoleHoles();
+    $('mole-msg').className = 'mole-msg';
+    if (isAllPicked()) finishGame();
+    else activateNextOrderedTurn('mole');
+  }, 1500);
 }
 
 function resetMoleHoles() {
@@ -4588,9 +4528,10 @@ function stopMoleSpawning() {
 
 function scheduleMoleTick() {
   if (!state.moleRunning) return;
-  const delay = 60 + Math.floor(Math.random() * 90);
+  const delay = 20 + Math.floor(Math.random() * 25);
   state.moleTimer = setTimeout(() => {
-    spawnMole();
+    spawnMole();          // 첫 번째 두더지
+    spawnMole();          // 두 번째 두더지 (동시 2개)
     scheduleMoleTick();
   }, delay);
 }
@@ -4611,7 +4552,7 @@ function spawnMole() {
   if (lbl) lbl.textContent = team;
   m.classList.add('up');
   m.onclick = (ev) => onMoleClick(m, ev);
-  const stayMs = 320 + Math.floor(Math.random() * 320);
+  const stayMs = 110 + Math.floor(Math.random() * 90);
   setTimeout(() => {
     if (m.classList.contains('up') && !m.classList.contains('hit')) {
       m.classList.remove('up');
@@ -4629,6 +4570,8 @@ function onMoleClick(m, ev) {
   state.moleCapacity[team]--;
   m.classList.add('hit');
   m.onclick = null;
+  if (state.moleCountdown) { clearInterval(state.moleCountdown); state.moleCountdown = null; }
+  $('mole-timer').style.display = 'none';
   stopMoleSpawning();
 
   // 별 폭발 효과
@@ -4644,6 +4587,7 @@ function onMoleClick(m, ev) {
   setTimeout(() => burst.remove(), 600);
 
   $('mole-tension').style.display = 'none';
+  $('mole-start').style.display = 'none';
   $('mole-msg').className = 'mole-msg big-reveal';
   $('mole-msg').innerHTML = `<span style="color:${teamColor(team)}">${team}조!</span>`;
   setTimeout(() => {
@@ -4656,172 +4600,6 @@ function onMoleClick(m, ev) {
     else activateNextOrderedTurn('mole');
   }, 1500);
 }
-
-/* ============================================================
-   POINT 21: ARCHERY 🏹 (OLYMPIC FIELD)
-   ============================================================ */
-function launchArchery() {
-  showScreen('game-archery');
-  state.archeryCapacity = {
-    A: state.teamCounts.aRandom,
-    B: state.teamCounts.bRandom,
-    C: state.teamCounts.cRandom,
-    D: state.teamCounts.dRandom
-  };
-  state.archeryPower = 0;
-  state.archeryPowerRunning = false;
-  state.archeryPowerRaf = null;
-  // 시작과 동시에 무작위 순서 결정 (농구슛과 동일)
-  state.archeryOrder = shuffle(state.attendingPool);
-  state.archeryOrderIdx = 0;
-  renderOrderedNamePanel('archery-names', 'archery');
-  renderTeamsPanel('archery-teams');
-  $('archery-current').textContent = '-';
-  $('archery-result').className = 'archery-result';
-  $('archery-result').textContent = '왼쪽 "랜덤 섞기"로 순서 다시 섞을 수 있어요';
-  $('archery-shoot').style.display = 'none';
-  $('archery-release').style.display = 'none';
-  $('archery-tension').style.display = 'none';
-  $('archery-power-fill').style.width = '0%';
-  resetArcheryArrows();
-  // 첫 사람 자동 활성화
-  activateNextOrderedTurn('archery');
-}
-
-function onArcheryName(name) {
-  state.currentPicker = name;
-  $('archery-current').textContent = name;
-  renderOrderedNamePanel('archery-names', 'archery');
-  $('archery-shoot').style.display = '';
-  $('archery-shoot').disabled = false;
-  $('archery-release').style.display = 'none';
-  $('archery-tension').style.display = 'none';
-  $('archery-result').className = 'archery-result';
-  $('archery-result').textContent = `${name}님, SHOOT 누르고 적절한 타이밍에 RELEASE!`;
-  resetArcheryArrows();
-}
-
-function resetArcheryArrows() {
-  document.querySelectorAll('.archery-arrow, .archery-ring-flash').forEach(a => a.remove());
-  const archer = $('archer');
-  if (archer) archer.classList.remove('drawing');
-}
-
-function startArcheryPower() {
-  if (!state.currentPicker) return;
-  $('archery-shoot').style.display = 'none';
-  $('archery-release').style.display = '';
-  $('archery-release').disabled = false;
-  $('archery-tension').style.display = '';
-  $('archery-tension').classList.add('shake');
-  $('archery-tension').textContent = '집중...';
-  $('archery-result').className = 'archery-result';
-  $('archery-result').textContent = '';
-  const archer = $('archer');
-  if (archer) archer.classList.add('drawing');
-  state.archeryPowerRunning = true;
-  state.archeryPowerStart = performance.now();
-  const fill = $('archery-power-fill');
-  const period = 1300;
-  const tick = (now) => {
-    if (!state.archeryPowerRunning) return;
-    const t = ((now - state.archeryPowerStart) % period) / period;
-    const wave = (Math.sin(t * 2 * Math.PI - Math.PI / 2) + 1) / 2;
-    fill.style.width = (wave * 100) + '%';
-    state.archeryPower = wave * 100;
-    state.archeryPowerRaf = requestAnimationFrame(tick);
-  };
-  state.archeryPowerRaf = requestAnimationFrame(tick);
-}
-
-function releaseArchery() {
-  if (!state.archeryPowerRunning) return;
-  state.archeryPowerRunning = false;
-  if (state.archeryPowerRaf) cancelAnimationFrame(state.archeryPowerRaf);
-  $('archery-release').disabled = true;
-  $('archery-tension').classList.remove('shake');
-  const archer = $('archer');
-  if (archer) archer.classList.remove('drawing');
-  const power = state.archeryPower;
-
-  let teamPriority;
-  if (power >= 80)      teamPriority = ['A','B','C','D'];
-  else if (power >= 60) teamPriority = ['B','A','C','D'];
-  else if (power >= 30) teamPriority = ['C','B','D','A'];
-  else                  teamPriority = ['D','C','B','A'];
-  let chosenTeam = null;
-  for (const t of teamPriority) {
-    if (state.archeryCapacity[t] > 0) { chosenTeam = t; break; }
-  }
-  if (!chosenTeam) return;
-  state.archeryCapacity[chosenTeam]--;
-
-  const stage = document.querySelector('.archery-stage');
-  const target = $('archery-target');
-  const archerEl = $('archer');
-  const stageRect = stage.getBoundingClientRect();
-  const archerRect = archerEl.getBoundingClientRect();
-  const targetRect = target.getBoundingClientRect();
-
-  const arrow = document.createElement('div');
-  arrow.className = 'archery-arrow';
-  arrow.textContent = '➤';
-  const startX = ((archerRect.left + archerRect.width/2) - stageRect.left) / stageRect.width * 100;
-  const startY = ((archerRect.top) - stageRect.top) / stageRect.height * 100;
-  arrow.style.left = startX + '%';
-  arrow.style.top = startY + '%';
-  arrow.style.transform = 'translate(-50%,-50%) rotate(-90deg) scale(0.7)';
-  stage.appendChild(arrow);
-
-  const targetCenterX = ((targetRect.left + targetRect.width/2) - stageRect.left) / stageRect.width * 100;
-  const targetCenterY = ((targetRect.top + targetRect.height/2) - stageRect.top) / stageRect.height * 100;
-  const ringRadii = { A: 0.21, B: 0.41, C: 0.63, D: 0.87 };
-  const halfW = (targetRect.width / 2);
-  const radPx = halfW * ringRadii[chosenTeam];
-  const angle = Math.random() * Math.PI * 2;
-  const finalXPct = targetCenterX + (Math.cos(angle) * radPx) / stageRect.width * 100;
-  const finalYPct = targetCenterY + (Math.sin(angle) * radPx) / stageRect.height * 100;
-
-  void arrow.offsetWidth;
-  arrow.classList.add('flying');
-  arrow.style.left = finalXPct + '%';
-  arrow.style.top = finalYPct + '%';
-  arrow.style.transform = 'translate(-50%,-50%) rotate(-15deg) scale(1)';
-
-  setTimeout(() => {
-    arrow.classList.remove('flying');
-    arrow.classList.add('stuck');
-    // Ring flash effect
-    const flash = document.createElement('div');
-    flash.className = 'archery-ring-flash';
-    const ringSize = halfW * 2 * ringRadii[chosenTeam];
-    flash.style.width = ringSize + 'px';
-    flash.style.height = ringSize + 'px';
-    flash.style.left = (((targetRect.left + targetRect.width/2) - stageRect.left)) + 'px';
-    flash.style.top = (((targetRect.top + targetRect.height/2) - stageRect.top)) + 'px';
-    flash.style.borderColor = teamColor(chosenTeam);
-    stage.appendChild(flash);
-    setTimeout(() => flash.remove(), 700);
-
-    $('archery-tension').style.display = 'none';
-    setTimeout(() => {
-      $('archery-result').className = 'archery-result big-reveal';
-      $('archery-result').innerHTML = `<span style="color:${teamColor(chosenTeam)}">${chosenTeam}조!</span>`;
-      $('archery-power-fill').style.width = '0%';
-      setTimeout(() => {
-        commitItemPick(chosenTeam, 'archery-current', 'archery-teams');
-        state.archeryOrderIdx++;
-        renderOrderedNamePanel('archery-names', 'archery');
-        $('archery-shoot').style.display = 'none';
-        $('archery-release').style.display = 'none';
-        $('archery-result').className = 'archery-result';
-        if (isAllPicked()) finishGame();
-        else activateNextOrderedTurn('archery');
-      }, 1500);
-    }, 350);
-  }, 720);
-}
-
 /* ============================================================
    POINT 17: BOOT
    ============================================================ */
