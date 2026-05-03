@@ -1815,6 +1815,24 @@ body {
   text-shadow: 0 0 24px rgba(255,77,109,0.9), 0 4px 8px rgba(0,0,0,0.6);
   animation: timer-danger 0.25s linear infinite;
 }
+.basket-timer {
+  position: absolute;
+  top: 6%;
+  left: 6%;
+  font-family: 'Black Han Sans', sans-serif;
+  font-size: 52px;
+  font-weight: 900;
+  color: #ffd84d;
+  text-shadow: 0 0 20px rgba(255,216,77,0.8), 0 4px 8px rgba(0,0,0,0.6);
+  z-index: 7;
+  line-height: 1;
+  animation: timer-pulse 1s ease-in-out infinite;
+}
+.basket-timer.danger {
+  color: #ff4d6d;
+  text-shadow: 0 0 24px rgba(255,77,109,0.9), 0 4px 8px rgba(0,0,0,0.6);
+  animation: timer-danger 0.25s linear infinite;
+}
 .claw-controls {
   position: absolute;
   top: 4%;
@@ -2351,6 +2369,147 @@ body {
   .salad-grid { grid-template-columns: repeat(4, 1fr); }
   .game-body { grid-template-columns: 180px 1fr 220px; }
 }
+
+/* ============================================================
+   BONUS LADDER GAME (번외 사다리타기)
+   ============================================================ */
+#screen-bonus-ladder { overflow-y: auto; align-items: center; }
+
+.bonus-phase {
+  width: 100%; max-width: 680px;
+  display: flex; flex-direction: column; align-items: center; gap: 14px;
+  margin: 0 auto;
+}
+
+/* 번호 배정 레이아웃: 좌(이름) + 우(숫자판) */
+.bonus-pick-layout {
+  display: flex; gap: 16px; width: 100%; max-width: 660px; align-items: flex-start;
+}
+.bonus-name-col {
+  display: flex; flex-direction: column; gap: 6px;
+  min-width: 120px; max-height: 380px; overflow-y: auto;
+}
+.bonus-name-item {
+  padding: 10px 16px; border-radius: 10px;
+  background: #15123a; border: 2px solid #2d2960;
+  color: #a5b4fc; cursor: pointer; font-size: 14px; font-weight: 700;
+  text-align: center; white-space: nowrap; transition: all .15s;
+}
+.bonus-name-item.active { background: #4338ca; border-color: #818cf8; color: #fff; }
+.bonus-name-item.done { background: #1a1640; border-color: #312e60; color: #4a4878; cursor: default; }
+.bonus-name-item:hover:not(.active):not(.done) { border-color: #6366f1; }
+
+/* 숫자판: 4열 그리드 */
+.bonus-number-grid-centered {
+  display: grid; grid-template-columns: repeat(4, 1fr);
+  gap: 8px; flex: 1;
+}
+.bonus-num-btn {
+  aspect-ratio: 1; border-radius: 14px;
+  background: #15123a; border: 2px solid #2d2960;
+  cursor: pointer; text-align: center; transition: all .15s;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px;
+  padding: 6px;
+}
+.bonus-num-btn:hover:not(.taken) { border-color: #818cf8; background: #221e5a; }
+.bonus-num-btn.taken { background: #2a2566; border-color: #4338ca; cursor: default; }
+.bonus-num-digit { font-size: 22px; font-weight: 900; color: #818cf8; line-height: 1; }
+.bonus-num-btn.taken .bonus-num-digit { color: #6366f1; font-size: 14px; }
+.bonus-num-name { font-size: 10px; color: #c4b5fd; line-height: 1.2; max-width: 58px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.bonus-phase { width: 100%; max-width: 680px; display: flex; flex-direction: column; align-items: center; gap: 14px; }
+
+.bonus-section-label {
+  font-size: 13px; font-weight: 700; letter-spacing: .08em;
+  color: #7c8aff; text-transform: uppercase; margin-bottom: 2px;
+}
+
+/* ── 참여자 선택 ── */
+.bonus-participant-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+  max-width: 600px;
+  width: 100%;
+}
+.bonus-chip {
+  padding: 14px 10px; border-radius: 14px;
+  background: #15123a; border: 2px solid #2d2960;
+  color: #8b92d4; cursor: pointer; font-size: 16px; font-weight: 700;
+  text-align: center; transition: all .15s;
+}
+.bonus-chip:hover { border-color: #6366f1; }
+.bonus-chip.on { background: #4338ca; border-color: #818cf8; color: #fff; }
+
+/* ── 경품 수 ── */
+.bonus-prize-row {
+  display: flex; align-items: center; gap: 14px;
+  font-size: 15px; font-weight: 700; color: #fbbf24;
+}
+.bonus-adj {
+  width: 34px; height: 34px; border-radius: 50%;
+  background: #15123a; border: 2px solid #3730a3;
+  color: #a5b4fc; font-size: 20px; font-weight: 800;
+  cursor: pointer; display: flex; align-items: center; justify-content: center;
+  transition: all .12s;
+}
+.bonus-adj:hover:not(:disabled) { background: #3730a3; color: #fff; }
+.bonus-adj:disabled { opacity: .35; cursor: default; }
+#bonus-prize-count { font-size: 26px; font-weight: 900; color: #fbbf24; min-width: 32px; text-align: center; }
+
+/* ── 번호 배정 ── */
+.bonus-pick-wrap {
+  display: flex; gap: 18px; width: 100%; justify-content: center; align-items: flex-start;
+}
+.bonus-name-list {
+  display: flex; flex-direction: column; gap: 6px; min-width: 110px;
+}
+.bonus-name-item {
+  padding: 9px 14px; border-radius: 10px;
+  background: #15123a; border: 2px solid #2d2960;
+  color: #a5b4fc; cursor: pointer; font-size: 13px; font-weight: 700;
+  text-align: center; transition: all .15s;
+}
+.bonus-name-item.active { background: #4338ca; border-color: #818cf8; color: #fff; transform: scale(1.04); }
+.bonus-name-item:hover:not(.active) { border-color: #6366f1; }
+
+.bonus-number-grid {
+  display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; flex: 1; max-width: 380px;
+}
+.bonus-num-btn {
+  padding: 8px 6px; border-radius: 10px;
+  background: #15123a; border: 2px solid #2d2960;
+  cursor: pointer; text-align: center; transition: all .15s;
+  min-height: 58px; display: flex; flex-direction: column;
+  align-items: center; justify-content: center; gap: 3px;
+}
+.bonus-num-btn:hover:not(.taken) { border-color: #818cf8; background: #221e5a; }
+.bonus-num-btn.taken { background: #2a2566; border-color: #4338ca; cursor: default; }
+.bonus-num-digit { font-size: 22px; font-weight: 900; color: #818cf8; line-height: 1; }
+.bonus-num-btn.taken .bonus-num-digit { color: #6366f1; font-size: 16px; }
+.bonus-num-name { font-size: 11px; color: #c4b5fd; line-height: 1.2; }
+
+.bonus-status {
+  font-size: 13px; color: #94a3b8; text-align: center; min-height: 18px;
+}
+
+/* ── 사다리 ── */
+#bonus-ladder-svg { max-width: 100%; display: block; margin: 0 auto; }
+
+.bonus-result-area { text-align: center; min-height: 60px; }
+.bonus-result-title { font-size: 22px; font-weight: 900; color: #fbbf24; margin-bottom: 10px; }
+.bonus-winner-row {
+  display: inline-flex; align-items: center; gap: 8px;
+  font-size: 26px; font-weight: 900; color: #fff;
+  background: linear-gradient(135deg, #78350f 0%, #b45309 100%);
+  border: 2px solid #fbbf24; border-radius: 14px;
+  padding: 10px 24px; margin: 6px;
+  animation: reveal-slide 0.4s cubic-bezier(0.16,1,0.3,1) both;
+}
+.bonus-winner-star { color: #fbbf24; }
+.bonus-winner-name { color: #fef3c7; }
+
+.bonus-btn-row { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
 </style>
 </head>
 <body>
@@ -2368,6 +2527,7 @@ body {
       <button class="btn" onclick="goToSalad()">시작하기</button>
       <button class="btn secondary" onclick="goToHistory()">지난 기록</button>
       <button class="btn secondary" onclick="goToEditMembers()">👥 멤버 편집</button>
+      <button class="btn secondary" onclick="launchBonusLadder()">🪜 번외</button>
     </div>
     <div class="main-credits">LUNCH SQUAD · 매월 1일 추첨</div>
   </div>
@@ -2484,6 +2644,7 @@ body {
           </div>
           <div class="basket-court"></div>
           <div class="basket-ball" id="basket-ball">🏀</div>
+          <div class="basket-timer" id="basket-timer" style="display:none">3</div>
           <div class="basket-result" id="basket-result">왼쪽에서 자기 이름을 클릭하세요</div>
           <div class="basket-controls">
             <button class="btn" id="basket-shoot" onclick="startBasketAim()" style="display:none">SHOOT!</button>
@@ -3740,6 +3901,25 @@ function startBasketAim() {
   $('basket-result').textContent = '두구두구... STOP!';
   state.basketAimRunning = true;
   state.basketAimStart = performance.now();
+
+  // 3초 카운트다운
+  state.basketTimeLeft = 3;
+  const basketTimerEl = $('basket-timer');
+  basketTimerEl.textContent = state.basketTimeLeft;
+  basketTimerEl.className = 'basket-timer';
+  basketTimerEl.style.display = '';
+  if (state.basketCountdown) clearInterval(state.basketCountdown);
+  state.basketCountdown = setInterval(() => {
+    state.basketTimeLeft--;
+    basketTimerEl.textContent = state.basketTimeLeft;
+    if (state.basketTimeLeft <= 1) basketTimerEl.className = 'basket-timer danger';
+    if (state.basketTimeLeft <= 0) {
+      clearInterval(state.basketCountdown);
+      state.basketCountdown = null;
+      if (state.basketAimRunning) stopBasketAim();
+    }
+  }, 1000);
+
   const aim = $('basket-aim');
   aim.style.transition = 'none';
   // Period for one full oscillation (faster = harder to time)
@@ -3760,6 +3940,8 @@ function stopBasketAim() {
   if (!state.basketAimRunning) return;
   state.basketAimRunning = false;
   if (state.basketAimRaf) cancelAnimationFrame(state.basketAimRaf);
+  if (state.basketCountdown) { clearInterval(state.basketCountdown); state.basketCountdown = null; }
+  if ($('basket-timer')) $('basket-timer').style.display = 'none';
   $('basket-stop').disabled = true;
 
   // Read where the arrow currently is (its computed left as %)
@@ -4779,6 +4961,376 @@ function onMoleClick(m, ev) {
 window.addEventListener('DOMContentLoaded', () => {
   $('main-month').textContent = getCurrentMonthLabel();
 });
+
+
+/* ============================================================
+   BONUS LADDER GAME (번외 사다리타기)
+   ============================================================ */
+const bonusState = {
+  participants: [],
+  prizeCount: 1,
+  assignments: {},    // col(0-based) → name
+  nameToCol: {},      // name → col
+  activeName: null,
+  ladderRungs: [],
+  prizeColumns: [],
+  animIdx: 0,
+  winners: []
+};
+
+function launchBonusLadder() {
+  showScreen('screen-bonus-ladder');
+  Object.assign(bonusState, {
+    participants: [], prizeCount: 1,
+    assignments: {}, nameToCol: {}, activeName: null,
+    ladderRungs: [], prizeColumns: [], animIdx: 0, winners: []
+  });
+  $('bonus-setup-phase').style.display = '';
+  $('bonus-pick-phase').style.display = 'none';
+  $('bonus-ladder-phase').style.display = 'none';
+  renderBonusParticipants();
+  renderBonusPrizeCount();
+}
+
+function renderBonusParticipants() {
+  const grid = $('bonus-participant-grid');
+  grid.innerHTML = '';
+  RANDOM_POOL.forEach(name => {
+    const on = bonusState.participants.includes(name);
+    const div = document.createElement('div');
+    div.className = 'bonus-chip' + (on ? ' on' : '');
+    div.textContent = name;
+    div.onclick = () => {
+      if (on) bonusState.participants = bonusState.participants.filter(n => n !== name);
+      else    bonusState.participants.push(name);
+      bonusState.prizeCount = Math.min(bonusState.prizeCount, Math.max(1, bonusState.participants.length - 1));
+      renderBonusParticipants();
+      renderBonusPrizeCount();
+    };
+    grid.appendChild(div);
+  });
+}
+
+function renderBonusPrizeCount() {
+  $('bonus-prize-count').textContent = bonusState.prizeCount;
+  const max = Math.max(1, bonusState.participants.length - 1);
+  $('bonus-prize-minus').disabled = bonusState.prizeCount <= 1;
+  $('bonus-prize-plus').disabled  = bonusState.participants.length < 2 || bonusState.prizeCount >= max;
+}
+
+function bonusPrizeAdj(d) {
+  const max = Math.max(1, bonusState.participants.length - 1);
+  bonusState.prizeCount = Math.max(1, Math.min(max, bonusState.prizeCount + d));
+  renderBonusPrizeCount();
+}
+
+function startBonusPickPhase() {
+  if (bonusState.participants.length < 2) { alert('참여자를 2명 이상 선택해 주세요!'); return; }
+  Object.assign(bonusState, { assignments: {}, nameToCol: {}, activeName: null });
+  $('bonus-setup-phase').style.display = 'none';
+  $('bonus-pick-phase').style.display = '';
+  $('bonus-ladder-phase').style.display = 'none';
+  $('bonus-reveal-btn').style.display = 'none';
+  $('bonus-status').textContent = '참여자 이름을 누른 뒤 번호를 선택하세요';
+  renderBonusPickPhase();
+}
+
+function renderBonusPickPhase() {
+  const n = bonusState.participants.length;
+  const assignedNames = new Set(Object.values(bonusState.assignments));
+  const unassigned = bonusState.participants.filter(nm => !assignedNames.has(nm));
+
+  // 이름 목록 (ㄱㄴㄷ 정렬, 배정된 것은 흐리게)
+  const nl = $('bonus-name-list');
+  nl.innerHTML = '';
+  const sortedAll = [...bonusState.participants].sort((a, b) => a.localeCompare(b, 'ko'));
+  sortedAll.forEach(nm => {
+    const isDone = assignedNames.has(nm);
+    const d = document.createElement('div');
+    d.className = 'bonus-name-item' + (bonusState.activeName === nm ? ' active' : isDone ? ' done' : '');
+    d.textContent = nm;
+    if (!isDone) d.onclick = () => { bonusState.activeName = nm; renderBonusPickPhase(); };
+    nl.appendChild(d);
+  });
+
+  // 번호 그리드
+  const ng = $('bonus-number-grid');
+  ng.innerHTML = '';
+  for (let i = 0; i < n; i++) {
+    const assigned = bonusState.assignments[i];
+    const d = document.createElement('div');
+    d.className = 'bonus-num-btn' + (assigned ? ' taken' : '');
+    if (assigned) {
+      d.innerHTML = `<span class="bonus-num-digit">${i+1}</span><span class="bonus-num-name">${assigned}</span>`;
+    } else {
+      d.innerHTML = `<span class="bonus-num-digit">${i+1}</span>`;
+      d.onclick = () => {
+        if (!bonusState.activeName) { $('bonus-status').textContent = '먼저 왼쪽에서 이름을 선택하세요!'; return; }
+        bonusState.assignments[i] = bonusState.activeName;
+        bonusState.nameToCol[bonusState.activeName] = i;
+        bonusState.activeName = null;
+        if (Object.keys(bonusState.assignments).length === n) {
+          $('bonus-reveal-btn').style.display = '';
+          $('bonus-status').textContent = '모두 번호를 골랐어요! 사다리를 시작하세요 🎰';
+        } else {
+          $('bonus-status').textContent = '다음 참여자가 번호를 고르세요';
+        }
+        renderBonusPickPhase();
+      };
+    }
+    ng.appendChild(d);
+  }
+}
+
+// ── 사다리 역방향 추적 (경품 → 위로) ──
+function ladderTraceReverse(startCol, rungs) {
+  let col = startCol;
+  const path = [{ x: col, y: rungs.length }];
+  for (let r = rungs.length - 1; r >= 0; r--) {
+    const row = rungs[r];
+    if (row.includes(col)) {
+      path.push({ x: col, y: r });
+      col = col + 1;
+      path.push({ x: col, y: r });
+    } else if (row.includes(col - 1)) {
+      path.push({ x: col, y: r });
+      col = col - 1;
+      path.push({ x: col, y: r });
+    }
+  }
+  path.push({ x: col, y: -1 });
+  return { path, finalCol: col };
+}
+
+function bonusSVG(col, row, n, ROWS) {
+  const W = 760, mg = 55;
+  const topY = 80, botY = 450;
+  const cs = n > 1 ? (W - mg * 2) / (n - 1) : 0;
+  const rs = (botY - topY) / (ROWS + 1);
+  const x = mg + col * cs;
+  const y = row === -1 ? topY : row === ROWS ? botY : topY + (row + 1) * rs;
+  return { x, y, cs, rs, topY, botY, mg };
+}
+
+function startBonusLadder() {
+  const n = bonusState.participants.length;
+  bonusState.ladderRungs = generateLadder(n);
+  const cols = shuffle(Array.from({ length: n }, (_, i) => i));
+  bonusState.prizeColumns = cols.slice(0, bonusState.prizeCount);
+  bonusState.animatedPrizes = new Set();
+  bonusState.winners = [];
+
+  $('bonus-setup-phase').style.display = 'none';
+  $('bonus-pick-phase').style.display = 'none';
+  $('bonus-ladder-phase').style.display = '';
+  $('bonus-reset-btn').style.display = 'none';
+  $('bonus-result-area').innerHTML = '';
+  drawBonusLadder();
+}
+
+function bonusCoord(col, row, n, ROWS) {
+  const W = 720, mg = 50;
+  const topY = 80, botY = 440;
+  const cs = n > 1 ? (W - mg * 2) / (n - 1) : 0;
+  const rs = (botY - topY) / (ROWS + 1);
+  const x = mg + col * cs;
+  const y = row === -1 ? topY : row === ROWS ? botY : topY + (row + 1) * rs;
+  return { x, y, cs, rs, topY, botY, mg };
+}
+
+function drawBonusLadder() {
+  const n = bonusState.participants.length;
+  const rungs = bonusState.ladderRungs;
+  const ROWS = rungs.length;
+  const { cs, rs, topY, botY, mg } = bonusCoord(0, -1, n, ROWS);
+  let s = `<defs>
+    <filter id="bglow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="4" result="b"/>
+      <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+  </defs>`;
+
+  // 세로선
+  for (let i = 0; i < n; i++) {
+    const x = mg + i * cs;
+    s += `<line x1="${x.toFixed(1)}" y1="${topY}" x2="${x.toFixed(1)}" y2="${botY}" stroke="#2d2960" stroke-width="3"/>`;
+  }
+  // 가로 rungs
+  rungs.forEach((row, r) => {
+    const y = (topY + (r + 1) * rs).toFixed(1);
+    row.forEach(left => {
+      const x1 = (mg + left * cs).toFixed(1), x2 = (mg + (left + 1) * cs).toFixed(1);
+      s += `<line x1="${x1}" y1="${y}" x2="${x2}" y2="${y}" stroke="#2d2960" stroke-width="3"/>`;
+    });
+  });
+  // 상단: 번호 + 이름
+  for (let i = 0; i < n; i++) {
+    const x = (mg + i * cs).toFixed(1);
+    const name = bonusState.assignments[i] || '?';
+    const sn = name.length > 3 ? name.slice(0, 3) + '.' : name;
+    s += `<circle cx="${x}" cy="${topY - 22}" r="18" fill="#1e1b4b" stroke="#4338ca" stroke-width="2"/>`;
+    s += `<text x="${x}" y="${topY - 17}" text-anchor="middle" font-size="14" fill="#a5b4fc" font-weight="800" font-family="Pretendard Variable,Pretendard,sans-serif">${i+1}</text>`;
+    s += `<text x="${x}" y="${topY - 46}" text-anchor="middle" font-size="11" fill="#7c8aff" font-family="Pretendard Variable,Pretendard,sans-serif">${sn}</text>`;
+  }
+  // 하단: ★ 클릭 가능
+  for (let i = 0; i < n; i++) {
+    const x = (mg + i * cs).toFixed(1);
+    const isPrize = bonusState.prizeColumns.includes(i);
+    if (isPrize) {
+      s += `<g class="bonus-prize-btn" data-col="${i}" style="cursor:pointer">`;
+      s += `<rect x="${parseFloat(x)-22}" y="${botY+6}" width="44" height="40" rx="8" fill="#78350f" stroke="#fbbf24" stroke-width="2.5"/>`;
+      s += `<text x="${x}" y="${botY+32}" text-anchor="middle" font-size="24" fill="#fbbf24" font-family="Pretendard Variable,Pretendard,sans-serif">★</text>`;
+      s += `</g>`;
+    } else {
+      s += `<rect x="${parseFloat(x)-16}" y="${botY+10}" width="32" height="30" rx="6" fill="#15123a" stroke="#2d2960" stroke-width="1"/>`;
+      s += `<text x="${x}" y="${botY+30}" text-anchor="middle" font-size="16" fill="#312e60" font-family="Pretendard Variable,Pretendard,sans-serif">—</text>`;
+    }
+  }
+  const svgEl = $('bonus-ladder-svg');
+  svgEl.innerHTML = s;
+
+  // ★ 클릭 이벤트
+  svgEl.querySelectorAll('.bonus-prize-btn').forEach(g => {
+    g.addEventListener('click', () => {
+      const col = parseInt(g.dataset.col);
+      if (bonusState.animatedPrizes.has(col)) return;
+      bonusState.animatedPrizes.add(col);
+      g.style.cursor = 'default';
+      g.style.opacity = '0.6';
+      runBonusPrizeAnim(col);
+    });
+  });
+}
+
+function runBonusPrizeAnim(prizeCol) {
+  const n = bonusState.participants.length;
+  const rungs = bonusState.ladderRungs;
+  const ROWS = rungs.length;
+  const svgEl = $('bonus-ladder-svg');
+  const { path, finalCol } = ladderTraceReverse(prizeCol, rungs);
+
+  // 경로를 SVG path "d" 문자열로 변환
+  const pts = path.map(pt => bonusCoord(pt.x, pt.y, n, ROWS));
+  const d = pts.map((p, i) => `${i === 0 ? 'M' : 'L'}${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(' ');
+
+  const pathEl = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+  pathEl.setAttribute('d', d);
+  pathEl.setAttribute('stroke', '#fbbf24');
+  pathEl.setAttribute('stroke-width', '5');
+  pathEl.setAttribute('stroke-linecap', 'round');
+  pathEl.setAttribute('stroke-linejoin', 'round');
+  pathEl.setAttribute('fill', 'none');
+  pathEl.setAttribute('filter', 'url(#bglow)');
+  svgEl.appendChild(pathEl);
+
+  // stroke-dashoffset 애니메이션
+  const len = pathEl.getTotalLength();
+  pathEl.style.strokeDasharray = len;
+  pathEl.style.strokeDashoffset = len;
+  pathEl.style.transition = 'none';
+
+  // 한 프레임 뒤에 애니메이션 시작 (layout 확정 후)
+  requestAnimationFrame(() => requestAnimationFrame(() => {
+    const dur = Math.max(0.5, len / 450); // 경로 길이에 비례한 속도
+    pathEl.style.transition = `stroke-dashoffset ${dur}s linear`;
+    pathEl.style.strokeDashoffset = '0';
+
+    // 완료 후 상단 당첨자 강조
+    setTimeout(() => {
+      bonusState.winners.push({ prizeCol, winnerCol: finalCol });
+      const { x: wx, topY } = bonusCoord(finalCol, -1, n, ROWS);
+
+      // 당첨 원 강조
+      const winCircle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+      winCircle.setAttribute('cx', wx.toFixed(1));
+      winCircle.setAttribute('cy', (topY - 22).toFixed(1));
+      winCircle.setAttribute('r', '20');
+      winCircle.setAttribute('fill', '#fbbf24');
+      winCircle.setAttribute('filter', 'url(#bglow)');
+      svgEl.appendChild(winCircle);
+
+      const winNum = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+      winNum.setAttribute('x', wx.toFixed(1));
+      winNum.setAttribute('y', (topY - 16).toFixed(1));
+      winNum.setAttribute('text-anchor', 'middle');
+      winNum.setAttribute('font-size', '15');
+      winNum.setAttribute('fill', '#1e1b4b');
+      winNum.setAttribute('font-weight', '900');
+      winNum.setAttribute('font-family', 'Pretendard Variable,Pretendard,sans-serif');
+      winNum.textContent = finalCol + 1;
+      svgEl.appendChild(winNum);
+
+      // 결과 표시
+      showBonusWinner(bonusState.assignments[finalCol]);
+
+      // 모든 경품 완료 시 다시하기 버튼
+      if (bonusState.animatedPrizes.size >= bonusState.prizeColumns.length) {
+        $('bonus-reset-btn').style.display = '';
+      }
+    }, dur * 1000 + 100);
+  }));
+}
+
+function showBonusWinner(name) {
+  const ra = $('bonus-result-area');
+  if (!ra.querySelector('.bonus-result-title')) {
+    ra.innerHTML = '<div class="bonus-result-title">🎉 경품 당첨!</div>';
+  }
+  const row = document.createElement('div');
+  row.className = 'bonus-winner-row';
+  row.innerHTML = `<span class="bonus-winner-star">★</span><span class="bonus-winner-name">${name}</span>`;
+  ra.appendChild(row);
+}
+
 </script>
+
+  <!-- ============ BONUS LADDER GAME ============ -->
+  <div id="screen-bonus-ladder" class="screen">
+    <div class="title-bar" style="max-width:700px;width:100%;margin:0 auto 8px;">
+      <h2>🎰 번외 사다리타기</h2>
+      <div class="controls">
+        <button class="btn secondary" onclick="showScreen('screen-main')">← 메인</button>
+      </div>
+    </div>
+
+    <!-- Phase 1: 참여자 & 경품 설정 -->
+    <div id="bonus-setup-phase" class="bonus-phase">
+      <div class="bonus-section-label">참여자 선택</div>
+      <div class="bonus-participant-grid" id="bonus-participant-grid"></div>
+
+      <div class="bonus-prize-row">
+        <span>경품 수</span>
+        <button class="bonus-adj" id="bonus-prize-minus" onclick="bonusPrizeAdj(-1)">−</button>
+        <span id="bonus-prize-count">1</span>
+        <button class="bonus-adj" id="bonus-prize-plus" onclick="bonusPrizeAdj(1)">+</button>
+        <span style="font-size:18px">★</span>
+      </div>
+
+      <button class="btn" onclick="startBonusPickPhase()">번호 배정 시작 →</button>
+    </div>
+
+    <!-- Phase 2: 번호 고르기 -->
+    <div id="bonus-pick-phase" class="bonus-phase" style="display:none">
+      <div class="bonus-section-label">번호를 고르세요</div>
+      <div style="font-size:12px;color:#64748b;margin-top:-8px">이름 선택 → 번호 클릭</div>
+      <div class="bonus-pick-layout">
+        <div class="bonus-name-col" id="bonus-name-list"></div>
+        <div class="bonus-number-grid-centered" id="bonus-number-grid"></div>
+      </div>
+      <div class="bonus-status" id="bonus-status">참여자 이름을 누른 뒤 번호를 선택하세요</div>
+      <button class="btn" id="bonus-reveal-btn" onclick="startBonusLadder()" style="display:none">사다리 시작! 🎰</button>
+    </div>
+
+    <!-- Phase 3: 사다리 & 애니메이션 -->
+    <div id="bonus-ladder-phase" class="bonus-phase" style="display:none">
+      <svg id="bonus-ladder-svg" viewBox="0 0 760 520" style="max-width:680px;width:100%"></svg>
+      <div class="bonus-result-area" id="bonus-result-area"></div>
+      <div style="font-size:12px;color:#64748b;text-align:center;margin-top:-4px">★ 를 클릭하면 사다리가 시작됩니다</div>
+      <div class="bonus-btn-row">
+        <button class="btn secondary" id="bonus-reset-btn" onclick="launchBonusLadder()" style="display:none">다시 하기</button>
+      </div>
+    </div>
+  </div>
+
 </body>
 </html>
