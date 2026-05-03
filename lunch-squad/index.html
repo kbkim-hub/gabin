@@ -3931,7 +3931,7 @@ function spinRoulette() {
 
   const letterIdx = SLOT_LETTERS.indexOf(team);
   // Land somewhere in the middle-late portion of the reel (cycles 8-11) for a nice long spin
-  const targetCycle = 8 + Math.floor(Math.random() * 4);
+  const targetCycle = 5 + Math.floor(Math.random() * 3);
   const targetItem = targetCycle * SLOT_LETTERS.length + letterIdx;
   const targetY = -(targetItem * SLOT_ITEM_HEIGHT);
 
@@ -3940,7 +3940,7 @@ function spinRoulette() {
   reel.style.transition = 'none';
   reel.style.transform = 'translateY(0)';
   void reel.offsetWidth; // force reflow
-  reel.style.transition = 'transform 2.8s cubic-bezier(0.15, 0.55, 0.25, 1)';
+  reel.style.transition = 'transform 1.6s cubic-bezier(0.15, 0.55, 0.25, 1)';
   reel.style.transform = `translateY(${targetY}px)`;
 
   setTimeout(() => {
@@ -3952,7 +3952,7 @@ function spinRoulette() {
       $('roulette-result').textContent = '다음 사람이 자기 이름을 클릭해주세요';
       if (isAllPicked()) finishGame();
     }, 900);
-  }, 2900);
+  }, 1700);
 }
 
 /* ============================================================
