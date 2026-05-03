@@ -1784,6 +1784,15 @@ body {
   color: var(--c-accent);
   text-shadow: 0 2px 8px rgba(0,0,0,0.6);
   z-index: 8;
+  transition: font-size 0.2s ease;
+}
+.claw-result.big-reveal {
+  font-size: 48px;
+  font-family: 'Pretendard Variable', Pretendard, sans-serif;
+  font-weight: 900;
+  letter-spacing: -0.02em;
+  text-shadow: 0 2px 20px rgba(0,0,0,0.5);
+  animation: reveal-slide 0.45s cubic-bezier(0.16,1,0.3,1) both;
 }
 .claw-tension {
   bottom: 21%;
@@ -2105,6 +2114,15 @@ body {
   color: #fff;
   text-shadow: 0 2px 8px rgba(0,0,0,0.6);
   z-index: 4;
+  transition: font-size 0.2s ease;
+}
+.mole-msg.big-reveal {
+  font-size: 48px;
+  font-family: 'Pretendard Variable', Pretendard, sans-serif;
+  font-weight: 900;
+  letter-spacing: -0.02em;
+  text-shadow: 0 2px 20px rgba(0,0,0,0.5);
+  animation: reveal-slide 0.45s cubic-bezier(0.16,1,0.3,1) both;
 }
 .mole-stage * { cursor: inherit !important; }
 .mole-tension { top: 15%; }
@@ -2129,6 +2147,10 @@ body {
 @keyframes timer-pulse {
   0%, 100% { transform: scale(1); }
   50%       { transform: scale(1.15); }
+}
+@keyframes reveal-slide {
+  0%   { opacity: 0; transform: translateY(12px) scale(0.95); }
+  100% { opacity: 1; transform: translateY(0) scale(1); }
 }
 @keyframes timer-danger {
   0%, 100% { transform: scale(1.2) translate(0,0); }
@@ -4454,7 +4476,7 @@ function startClawMove() {
 
   const arm = $('claw-arm');
   arm.style.transition = 'none';
-  const period = 1700;
+  const period = 1800;
   const tick = (now) => {
     if (!state.clawMoveRunning) return;
     const t = ((now - state.clawMoveStart) % period) / period;
@@ -4498,8 +4520,8 @@ function stopClawMove() {
     const d = Math.abs(armCenterX - active[i].xPct);
     if (d < minDist) { minDist = d; chosen = active[i]; }
   }
-  // 가장 가까운 인형까지 거리가 14% 초과 → 미스, 캡슐 등장
-  if (minDist > 6) { showClawCapsules(); return; }
+  // 가장 가까운 인형까지 거리가 5% 초과 → 미스, 캡슐 등장
+  if (minDist > 5) { showClawCapsules(); return; }
   state.clawCapacity[chosen.team]--;
 
   // 1) Move arm to prize X
