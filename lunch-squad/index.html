@@ -4499,7 +4499,7 @@ function stopClawMove() {
     if (d < minDist) { minDist = d; chosen = active[i]; }
   }
   // 가장 가까운 인형까지 거리가 14% 초과 → 미스, 캡슐 등장
-  if (minDist > 14) { showClawCapsules(); return; }
+  if (minDist > 6) { showClawCapsules(); return; }
   state.clawCapacity[chosen.team]--;
 
   // 1) Move arm to prize X
