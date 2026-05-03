@@ -46,12 +46,13 @@
             flex-wrap: wrap;
         }
 
-        .client-selector { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+        .client-selector { display: flex; gap: 6px; align-items: center; flex-wrap: nowrap; overflow: visible; min-width: 0; }
+        .admin-bar { overflow: visible !important; }
 
         /* 검색 드롭다운 */
         .search-wrap {
             position: relative;
-            width: 220px;
+            width: 280px;
         }
         .search-wrap input {
             width: 100%;
@@ -70,7 +71,7 @@
             position: absolute;
             top: calc(100% + 4px);
             left: 0;
-            width: 260px;
+            width: 300px;
             background: #fff;
             border: 1px solid var(--border);
             border-radius: 8px;
@@ -87,8 +88,26 @@
             font-size: 13px;
         }
         .search-dropdown .dd-item:hover { background: #eff6ff; }
+        .search-dropdown .dd-item.active { background: #dbeafe; }
         .search-dropdown .dd-empty {
             padding: 12px; color: var(--secondary); font-size: 12px; text-align: center;
+        }
+        .mgr-count-badge {
+            display: inline-block;
+            margin-left: 4px;
+            padding: 2px 7px;
+            font-size: 11px;
+            font-weight: 600;
+            color: #1e40af;
+            background: #dbeafe;
+            border-radius: 999px;
+            vertical-align: middle;
+        }
+        .dd-item .item-count {
+            float: right;
+            color: #6b7280;
+            font-size: 11px;
+            font-weight: 500;
         }
 
         .btn {
@@ -357,12 +376,18 @@
         @media print {
             /* 1. 절대 인쇄되면 안 되는 요소들 (강제 삭제) */
             .admin-bar,
+            .admin-bar *,
             .no-print,
             button,
             nav,
             .menu-container,
-            [class*="admin"] {
+            [class*="admin"],
+            #managerDropdown,
+            #clientDropdown,
+            #bizCodeDropdown,
+            .search-dropdown {
                 display: none !important;
+                visibility: hidden !important;
             }
 
             /* 2. 한 페이지에 꽉 차게 들어오도록 설정 */
@@ -431,7 +456,15 @@
     <div class="admin-bar no-print">
         <div class="client-selector">
             <span class="label">담당자:</span>
-            <select id="managerSelect" onchange="onManagerChange()" style="padding:7px 10px; border:1px solid var(--border); border-radius:6px; font-size:13px; font-family:inherit; min-width:90px;">
+            <!-- 담당자 검색 드롭다운 -->
+            <div class="search-wrap" id="managerSearchWrap" style="width:170px;">
+                <input type="text" id="managerSearch" placeholder="담당자 검색..." autocomplete="off"
+                    oninput="filterManagers()" onfocus="openManagerDropdown()" onkeydown="handleManagerSearchKey(event)" value="전체">
+                <span class="search-icon">▾</span>
+                <div class="search-dropdown" id="managerDropdown" style="width:160px;"></div>
+            </div>
+            <span id="managerCountBadge" class="mgr-count-badge" style="display:none;"></span>
+            <select id="managerSelect" onchange="onManagerChange()" style="display:none;">
                 <option value="">전체</option>
                 <option>김희정</option>
                 <option>김미선</option>
@@ -458,9 +491,40 @@
             </div>
             <button class="btn btn-primary" onclick="saveData()">💾 저장/수정</button>
             <button class="btn btn-danger" onclick="deleteData()">🗑️ 삭제</button>
-            <button class="btn btn-outline" onclick="shiftYear()">📅 연도 이월 (당해→전년)</button>
-            <button class="btn btn-outline" onclick="window.print()">🖨️ 인쇄/PDF</button>
+            <button class="btn btn-outline" onclick="shiftYear()" title="당해 데이터를 전년으로 이월합니다">📅 이월 (당해→전년)</button>
+            <button class="btn btn-outline" onclick="unshiftYear()" title="이월 직전 상태로 되돌립니다">↩️ 되돌리기</button>
+            <button class="btn btn-outline" onclick="doPrint()">🖨️ 인쇄/PDF</button>
             <button class="btn" onclick="exportToExcel()" style="background:#1d6f42;color:white;font-weight:600;">📊 엑셀 내보내기</button>
+            <button class="btn" onclick="document.getElementById('excelImportFile').click()" style="background:#0c4a6e;color:white;font-weight:600;">📥 엑셀 업로드</button>
+            <input type="file" id="excelImportFile" accept=".xlsx,.xls" style="display:none;" onchange="importFromExcel(event)">
+        </div>
+
+        <!-- 변경사항 경고 모달 -->
+        <div id="dirtyModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.45); z-index:10001; align-items:center; justify-content:center;">
+            <div style="background:#fff; padding:22px 26px; border-radius:10px; min-width:380px; max-width:480px; box-shadow:0 6px 24px rgba(0,0,0,0.25);">
+                <h3 style="margin:0 0 10px 0; font-size:16px; color:#b91c1c;">⚠ 저장하지 않은 변경사항</h3>
+                <p id="dirtyModalMsg" style="margin:0 0 14px 0; font-size:13px; color:#374151; line-height:1.5;">현재 입력 중인 데이터가 저장되지 않았습니다.<br>어떻게 하시겠어요?</p>
+                <div style="display:flex; gap:8px; justify-content:flex-end; margin-top:18px; flex-wrap:wrap;">
+                    <button class="btn btn-outline" onclick="_dirtyDecide('cancel')" style="padding:7px 14px;">취소</button>
+                    <button class="btn btn-danger" onclick="_dirtyDecide('discard')" style="padding:7px 14px;">변경 버리고 이동</button>
+                    <button class="btn btn-primary" onclick="_dirtyDecide('save')" style="padding:7px 14px;">저장 후 이동</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 엑셀 업로드 - 담당자 선택 모달 -->
+        <div id="excelImportModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.45); z-index:9999; align-items:center; justify-content:center;">
+            <div style="background:#fff; padding:22px 26px; border-radius:10px; min-width:340px; max-width:440px; box-shadow:0 6px 24px rgba(0,0,0,0.25); font-family:inherit;">
+                <h3 style="margin:0 0 10px 0; font-size:16px; color:#0c4a6e;">📥 엑셀 업로드 - 담당자 선택</h3>
+                <p id="excelImportModalInfo" style="margin:0 0 14px 0; font-size:13px; color:#374151; line-height:1.5;"></p>
+                <label style="display:block; margin-bottom:6px; font-size:13px; font-weight:600;">담당자</label>
+                <select id="excelImportManagerSelect" style="width:100%; padding:8px 10px; border:1px solid #cbd5e1; border-radius:6px; font-size:14px; font-family:inherit;"></select>
+                <p style="margin:8px 0 0 0; font-size:11px; color:#6b7280;">선택한 담당자에게 신규 거래처가 일괄 배정됩니다. (같은 상호가 이미 있으면 건너뜁니다)</p>
+                <div style="display:flex; gap:10px; justify-content:flex-end; margin-top:18px;">
+                    <button class="btn btn-outline" onclick="_cancelExcelImport()" style="padding:7px 16px;">취소</button>
+                    <button class="btn btn-primary" onclick="_confirmExcelImport()" style="padding:7px 16px;">가져오기</button>
+                </div>
+            </div>
         </div>
         <div>
         </div>
@@ -910,14 +974,117 @@ function formatComma(el) {
 }
 
 // + 키 → 1 누른 뒤 + 마다 ×1000 (1+ → 1,000 / 1++ → 1,000,000)
+// 메인표 입력 가능 필드 순서 (각 칼럼별 위→아래)
+const _MAIN_TABLE_ORDER = ['rev','exp','base','pre','ded'];
+
 function handlePlusKey(e, el) {
     if (e.key === '+' || e.key === '=') {
         e.preventDefault();
         const cur = parseInt(el.value.replace(/,/g, '')) || 0;
         el.value = (cur * 1000).toLocaleString();
         calcAll();
+        return;
+    }
+    if (e.key === 'Enter') {
+        e.preventDefault();
+        // 현재 필드 ID에서 prefix와 suffix(24/25) 분리
+        const m = el.id.match(/^([a-z]+)(24|25)$/);
+        if (!m) return;
+        const [_, prefix, suffix] = m;
+        const idx = _MAIN_TABLE_ORDER.indexOf(prefix);
+        if (idx === -1) return;
+        // 다음 필드 찾기 (readonly 건너뛰기)
+        for (let i = idx + 1; i < _MAIN_TABLE_ORDER.length; i++) {
+            const next = document.getElementById(_MAIN_TABLE_ORDER[i] + suffix);
+            if (next && !next.readOnly && !next.disabled) {
+                next.focus();
+                next.select();
+                return;
+            }
+        }
+        // 마지막이면 그냥 머무름 (또는 다음 칼럼으로 갈 수도 있음)
     }
 }
+
+// ═══ 변경사항(dirty) 추적 ═══════════════════════════════════════
+let _formSnapshot = null;
+let _suppressDirty = false; // 프로그램이 폼 변경할 때는 dirty 안되도록
+
+function captureFormSnapshot() {
+    const snap = {};
+    document.querySelectorAll('#printArea input[id], #printArea select[id], #printArea textarea[id]').forEach(el => {
+        if (el.readOnly) return;
+        if (el.type === 'checkbox') snap[el.id] = el.checked ? '1' : '';
+        else snap[el.id] = el.value;
+    });
+    const mgr = document.getElementById('managerSelect');
+    if (mgr) snap['__manager'] = mgr.value;
+    _formSnapshot = snap;
+}
+
+function isDirty() {
+    if (!_formSnapshot) return false;
+    const els = document.querySelectorAll('#printArea input[id], #printArea select[id], #printArea textarea[id]');
+    for (const el of els) {
+        if (el.readOnly) continue;
+        const cur = (el.type === 'checkbox') ? (el.checked ? '1' : '') : el.value;
+        const old = _formSnapshot[el.id] || '';
+        if (cur !== old) return true;
+    }
+    const mgr = document.getElementById('managerSelect');
+    if (mgr && (_formSnapshot['__manager'] || '') !== mgr.value) return true;
+    return false;
+}
+
+// 변경사항 모달 (3택)
+let _dirtyResolver = null;
+function askDirtyAction(msg) {
+    return new Promise(resolve => {
+        _dirtyResolver = resolve;
+        if (msg) document.getElementById('dirtyModalMsg').innerHTML = msg;
+        document.getElementById('dirtyModal').style.display = 'flex';
+    });
+}
+function _dirtyDecide(action) {
+    document.getElementById('dirtyModal').style.display = 'none';
+    if (_dirtyResolver) { const r = _dirtyResolver; _dirtyResolver = null; r(action); }
+}
+
+// 페이지 닫기 경고
+window.addEventListener('beforeunload', function(e) {
+    if (isDirty()) {
+        e.preventDefault();
+        e.returnValue = '';
+        return '';
+    }
+});
+
+// ═══ 담당자별 거래처 수 ═══════════════════════════════════════
+function getManagerCounts() {
+    const clients = JSON.parse(localStorage.getItem('taxClients') || '{}');
+    const counts = {};
+    Object.values(clients).forEach(d => {
+        const m = (d && d._manager) || '';
+        counts[m] = (counts[m] || 0) + 1;
+    });
+    return counts;
+}
+
+function updateManagerBadge() {
+    const badge = document.getElementById('managerCountBadge');
+    const sel = document.getElementById('managerSelect');
+    if (!badge || !sel) return;
+    const mgr = sel.value;
+    if (!mgr) {
+        badge.style.display = 'none';
+        return;
+    }
+    const counts = getManagerCounts();
+    badge.textContent = (counts[mgr] || 0) + '건';
+    badge.style.display = 'inline-block';
+}
+
+
 
 // ── 현재 사용 연도 ──
 let yearPrev = 2024, yearCurr = 2025;
@@ -940,9 +1107,59 @@ function editYears() {
     applyYears();
 }
 
+// ── 연도 이월 백업 (마지막 이월 1회 되돌리기용) ──
+let _shiftBackup = null;
+const _SHIFT_BACKUP_KEY = '_taxShiftBackup';
+
+const _SHIFT_BACKUP_FIELDS = [
+    'rev24','exp24','inc24','base24','rate24','tax24','pre24','ded24','final24',
+    'rev25','exp25','inc25','base25','rate25','tax25','pre25','ded25','final25',
+    'type24','type25','book24','book25','expCat24','expCat25'
+];
+
+function _captureShiftBackup() {
+    const fields = {};
+    _SHIFT_BACKUP_FIELDS.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) fields[id] = el.value;
+    });
+    const r24 = document.getElementById('incRate24');
+    const r25 = document.getElementById('incRate25');
+    const backup = {
+        fields,
+        incRate24: r24 ? r24.textContent : '',
+        incRate25: r25 ? r25.textContent : '',
+        yearPrev, yearCurr,
+        bookManual: _bookManuallyChanged,
+        expCatManual: _expCatManuallyChanged,
+        ts: Date.now()
+    };
+    _shiftBackup = backup;
+    try { localStorage.setItem(_SHIFT_BACKUP_KEY, JSON.stringify(backup)); } catch(e) {}
+}
+
+function _loadShiftBackup() {
+    if (_shiftBackup) return _shiftBackup;
+    try {
+        const raw = localStorage.getItem(_SHIFT_BACKUP_KEY);
+        if (raw) _shiftBackup = JSON.parse(raw);
+    } catch(e) {}
+    return _shiftBackup;
+}
+
+function _clearShiftBackup() {
+    _shiftBackup = null;
+    try { localStorage.removeItem(_SHIFT_BACKUP_KEY); } catch(e) {}
+}
+
+// 페이지 로드시 백업 자동 복원 시도
+_loadShiftBackup();
+
 // ── 연도 이월: 당해 → 전년으로 복사, 당해 초기화 ──
 function shiftYear() {
-    if (!confirm(`${yearCurr}년 데이터를 ${yearPrev}년으로 이월하고\n${yearCurr + 1}년 입력란을 비우겠습니까?\n\n(현재 저장된 거래처가 있다면 이월 후 다시 저장하세요)`)) return;
+    if (!confirm(`${yearCurr}년 데이터를 ${yearPrev}년으로 이월하고\n${yearCurr + 1}년 입력란을 비우겠습니까?\n\n(되돌리기 1회까지 가능 / 저장된 거래처는 이월 후 다시 저장하세요)`)) return;
+    // 이월 직전 상태 백업 (되돌리기용)
+    _captureShiftBackup();
     // 이월할 필드 목록 (25→24)
     const fields = ['rev', 'exp', 'inc', 'base', 'rate', 'tax', 'pre', 'ded', 'final'];
     fields.forEach(f => {
@@ -983,6 +1200,90 @@ function shiftYear() {
     yearCurr += 1;
     applyYears();
     // 이월 후 자동 재계산
+    if (typeof recalcBookExp === 'function') recalcBookExp();
+}
+
+// ── 연도 되돌리기: 백업이 있으면 정확 복원, 없으면 단순 역이동 ──
+function unshiftYear() {
+    const bk = _loadShiftBackup();
+    if (bk) {
+        const when = bk.ts ? new Date(bk.ts).toLocaleString('ko-KR') : '';
+        if (!confirm(`마지막 이월 직전 상태로 복원합니다.
+(이월 시점: ${when})
+
+· 전년: ${bk.yearPrev}년 데이터 복구
+· 당해: ${bk.yearCurr}년 데이터 복구
+
+현재 입력값은 덮어써집니다. 진행할까요?`)) return;
+        Object.entries(bk.fields || {}).forEach(([id, value]) => {
+            const el = document.getElementById(id);
+            if (el) el.value = value;
+        });
+        const r24 = document.getElementById('incRate24');
+        const r25 = document.getElementById('incRate25');
+        if (r24) r24.textContent = bk.incRate24 || '-';
+        if (r25) r25.textContent = bk.incRate25 || '-';
+        yearPrev = bk.yearPrev;
+        yearCurr = bk.yearCurr;
+        _bookManuallyChanged = !!bk.bookManual;
+        _expCatManuallyChanged = !!bk.expCatManual;
+        applyYears();
+        const bookMark = document.getElementById('book25AutoMark');
+        const expMark = document.getElementById('expCat25AutoMark');
+        const book25El = document.getElementById('book25');
+        const exp25El = document.getElementById('expCat25');
+        if (bookMark) bookMark.style.display = (!_bookManuallyChanged && book25El && book25El.value) ? 'inline-block' : 'none';
+        if (expMark) expMark.style.display = (!_expCatManuallyChanged && exp25El && exp25El.value) ? 'inline-block' : 'none';
+        _clearShiftBackup();
+        if (typeof calcAll === 'function') calcAll();
+        if (typeof updateBookExpInfo === 'function') updateBookExpInfo();
+        alert('이월 직전 상태로 복원되었습니다.');
+        return;
+    }
+    if (!confirm(`백업이 없어 단순 역이동만 가능합니다.
+${yearPrev}년 데이터를 ${yearCurr}년으로 옮기고 ${yearPrev}년 입력란을 비웁니다.
+현재 입력된 ${yearCurr}년 데이터는 덮어써집니다.
+
+진행할까요?`)) return;
+    // 전년(24) → 당해(25) 이동
+    const fields = ['rev', 'exp', 'inc', 'base', 'rate', 'tax', 'pre', 'ded', 'final'];
+    fields.forEach(f => {
+        const prev = document.getElementById(f + '24');
+        const curr = document.getElementById(f + '25');
+        if (curr && prev) curr.value = prev.value;
+    });
+    const prev24 = document.getElementById('incRate24');
+    const curr25 = document.getElementById('incRate25');
+    if (curr25 && prev24) curr25.textContent = prev24.textContent;
+    // type 되돌리기
+    const type24 = document.getElementById('type24');
+    const type25 = document.getElementById('type25');
+    if (type25 && type24) type25.value = type24.value;
+    // 기장의무·경비율판단 되돌리기
+    const book24 = document.getElementById('book24');
+    const book25 = document.getElementById('book25');
+    if (book25 && book24) book25.value = book24.value;
+    const expCat24 = document.getElementById('expCat24');
+    const expCat25 = document.getElementById('expCat25');
+    if (expCat25 && expCat24) expCat25.value = expCat24.value;
+    // 전년 필드 초기화
+    ['rev24','exp24','inc24','base24','rate24','tax24','pre24','ded24','final24'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.value = '';
+    });
+    if (prev24) prev24.textContent = '-';
+    if (book24) book24.value = '';
+    if (expCat24) expCat24.value = '';
+    // 당해 자동마크는 수동값으로 간주 (사용자가 직접 옮긴 것이므로)
+    _bookManuallyChanged = false;
+    _expCatManuallyChanged = false;
+    const bookMark = document.getElementById('book25AutoMark');
+    const expMark = document.getElementById('expCat25AutoMark');
+    if (bookMark) bookMark.style.display = 'none';
+    if (expMark) expMark.style.display = 'none';
+    yearPrev -= 1;
+    yearCurr -= 1;
+    applyYears();
     if (typeof recalcBookExp === 'function') recalcBookExp();
 }
 
@@ -1454,7 +1755,109 @@ document.addEventListener('click', function(e) {
     if (!document.getElementById('clientSearchWrap').contains(e.target)) {
         document.getElementById('clientDropdown').classList.remove('open');
     }
+    const mgrWrap = document.getElementById('managerSearchWrap');
+    if (mgrWrap && !mgrWrap.contains(e.target)) {
+        document.getElementById('managerDropdown').classList.remove('open');
+    }
 });
+
+// ─── 인쇄 (드롭다운 닫고 실행) ────────────────────────────────
+function doPrint() {
+    ['managerDropdown','clientDropdown','bizCodeDropdown'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.classList.remove('open');
+    });
+    setTimeout(() => window.print(), 50);
+}
+
+// ─── 담당자 검색 드롭다운 ─────────────────────────────────────
+function openManagerDropdown() {
+    filterManagers();
+    document.getElementById('managerDropdown').classList.add('open');
+}
+
+let _mgrActiveIdx = -1;
+let _mgrFiltered = [];
+
+function filterManagers() {
+    const q = (document.getElementById('managerSearch').value || '').toLowerCase();
+    const dd = document.getElementById('managerDropdown');
+    const sel = document.getElementById('managerSelect');
+    const opts = Array.from(sel.options);
+    const counts = getManagerCounts();
+
+    const filtered = opts.filter(o => {
+        const display = o.value || '전체';
+        return display.toLowerCase().includes(q);
+    });
+    _mgrFiltered = filtered.map(o => o.value || '');
+    _mgrActiveIdx = filtered.length > 0 ? 0 : -1;
+
+    if (filtered.length === 0) {
+        dd.innerHTML = '<div class="dd-empty">담당자 없음</div>';
+    } else {
+        dd.innerHTML = filtered.map((o, idx) => {
+            const v = o.value || '';
+            const display = v || '전체';
+            const escV = v.replace(/'/g, "\\'");
+            // '전체'엔 카운트 표시 안 함 / 다른 담당자엔 (n) 표시
+            const cnt = v ? (counts[v] || 0) : null;
+            const cntHtml = (cnt !== null) ? `<span class="item-count">(${cnt})</span>` : '';
+            const cls = idx === _mgrActiveIdx ? 'dd-item active' : 'dd-item';
+            return `<div class="${cls}" data-idx="${idx}" onclick="selectManager('${escV}')">${display}${cntHtml}</div>`;
+        }).join('');
+    }
+    dd.classList.add('open');
+}
+
+function _mgrHighlight() {
+    const dd = document.getElementById('managerDropdown');
+    Array.from(dd.children).forEach((el, i) => {
+        if (el.classList.contains('dd-item')) {
+            el.classList.toggle('active', i === _mgrActiveIdx);
+            if (i === _mgrActiveIdx) el.scrollIntoView({block: 'nearest'});
+        }
+    });
+}
+
+function selectManager(value) {
+    const sel = document.getElementById('managerSelect');
+    sel.value = value;
+    document.getElementById('managerSearch').value = value || '전체';
+    document.getElementById('managerDropdown').classList.remove('open');
+    onManagerChange();
+    updateManagerBadge();
+}
+
+function handleManagerSearchKey(e) {
+    const dd = document.getElementById('managerDropdown');
+    if (e.key === 'Escape') {
+        dd.classList.remove('open');
+        return;
+    }
+    if (!_mgrFiltered || _mgrFiltered.length === 0) return;
+    if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        _mgrActiveIdx = Math.min(_mgrActiveIdx + 1, _mgrFiltered.length - 1);
+        _mgrHighlight();
+    } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        _mgrActiveIdx = Math.max(_mgrActiveIdx - 1, 0);
+        _mgrHighlight();
+    } else if (e.key === 'Enter') {
+        e.preventDefault();
+        if (_mgrActiveIdx >= 0 && _mgrActiveIdx < _mgrFiltered.length) {
+            selectManager(_mgrFiltered[_mgrActiveIdx]);
+        }
+    }
+}
+
+// 외부에서 담당자가 바뀔 때 검색창 표시도 같이 갱신
+function syncManagerDisplay() {
+    const sel = document.getElementById('managerSelect');
+    const inp = document.getElementById('managerSearch');
+    if (sel && inp) inp.value = sel.value || '전체';
+}
 
 // ─── 거래처 검색 드롭다운 ─────────────────────────────────────
 let _allClients = [];
@@ -1471,6 +1874,9 @@ function onManagerChange() {
     filterClients();
 }
 
+let _clientActiveIdx = -1;
+let _clientFiltered = [];
+
 function filterClients() {
     const q = document.getElementById('clientSearch').value.toLowerCase();
     const manager = document.getElementById('managerSelect').value;
@@ -1485,34 +1891,84 @@ function filterClients() {
         }
         return true;
     });
+    _clientFiltered = filtered;
+    _clientActiveIdx = filtered.length > 0 ? 0 : -1;
 
     if (filtered.length === 0) {
         dd.innerHTML = '<div class="dd-empty">거래처 없음</div>';
     } else {
-        dd.innerHTML = filtered.map(name => {
+        dd.innerHTML = filtered.map((name, idx) => {
             const d = clients[name];
             const mgr = d && d['_manager'] ? `<span style="color:#94a3b8;font-size:11px;"> [${d['_manager']}]</span>` : '';
-            return `<div class="dd-item" onclick="selectClient('${name.replace(/'/g, "\\'")}')">${name}${mgr}</div>`;
+            const cls = idx === _clientActiveIdx ? 'dd-item active' : 'dd-item';
+            return `<div class="${cls}" data-idx="${idx}" onclick="selectClient('${name.replace(/'/g, "\\'")}')">${name}${mgr}</div>`;
         }).join('');
     }
     dd.classList.add('open');
 }
 
-function selectClient(name) {
+function _clientHighlight() {
+    const dd = document.getElementById('clientDropdown');
+    Array.from(dd.children).forEach((el, i) => {
+        if (el.classList.contains('dd-item')) {
+            el.classList.toggle('active', i === _clientActiveIdx);
+            if (i === _clientActiveIdx) el.scrollIntoView({block: 'nearest'});
+        }
+    });
+}
+
+async function selectClient(name) {
+    if (isDirty()) {
+        const action = await askDirtyAction(`현재 입력 중인 데이터가 저장되지 않았습니다.<br><b>${name}</b>(으)로 이동하시겠어요?`);
+        if (action === 'cancel') return;
+        if (action === 'save') {
+            const bizName = document.getElementById('bizName').value.trim();
+            if (!bizName) {
+                alert('현재 폼에 거래처 상호가 비어있어 저장할 수 없습니다. 먼저 상호를 입력하거나 "변경 버리고 이동"을 선택해주세요.');
+                return;
+            }
+            saveData();
+        }
+    }
     _selectedClient = name;
     document.getElementById('clientSearch').value = name;
     document.getElementById('clientDropdown').classList.remove('open');
     loadClientData(name);
+    captureFormSnapshot();
 }
 
 function handleSearchKey(e) {
-    if (e.key === 'Escape') document.getElementById('clientDropdown').classList.remove('open');
+    const dd = document.getElementById('clientDropdown');
+    if (e.key === 'Escape') {
+        dd.classList.remove('open');
+        return;
+    }
+    if (!_clientFiltered || _clientFiltered.length === 0) return;
+    if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        _clientActiveIdx = Math.min(_clientActiveIdx + 1, _clientFiltered.length - 1);
+        _clientHighlight();
+    } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        _clientActiveIdx = Math.max(_clientActiveIdx - 1, 0);
+        _clientHighlight();
+    } else if (e.key === 'Enter') {
+        e.preventDefault();
+        if (_clientActiveIdx >= 0 && _clientActiveIdx < _clientFiltered.length) {
+            selectClient(_clientFiltered[_clientActiveIdx]);
+        }
+    }
 }
 
 // ─── 저장 / 불러오기 / 삭제 ──────────────────────────────────
 function saveData() {
     const name = document.getElementById('bizName').value.trim();
     if (!name) return alert('거래처 상호를 입력해야 저장할 수 있습니다.');
+
+    const mgr = document.getElementById('managerSelect').value;
+    if (!mgr) {
+        if (!confirm('담당자가 선택되지 않았습니다. 그래도 저장하시겠습니까?\n(나중에 담당자별로 검색·내보내기할 때 목록에 보이지 않을 수 있습니다)')) return;
+    }
 
     const data = {};
     document.querySelectorAll('input[id], select[id], textarea[id]').forEach(el => {
@@ -1527,7 +1983,7 @@ function saveData() {
     data['_yearPrev'] = yearPrev;
     data['_yearCurr'] = yearCurr;
     // 담당자 저장
-    data['_manager'] = document.getElementById('managerSelect').value;
+    data['_manager'] = mgr;
     // 기장의무판단·경비율판단 수동 변경 플래그
     data['_bookManual'] = _bookManuallyChanged ? '1' : '';
     data['_expCatManual'] = _expCatManuallyChanged ? '1' : '';
@@ -1538,6 +1994,12 @@ function saveData() {
     _selectedClient = name;
     alert('저장되었습니다.');
     updateClientList(name);
+    // 저장된 거래처를 검색창과 드롭다운에 즉시 반영 (드롭다운 열어두기)
+    document.getElementById('clientSearch').value = name;
+    filterClients();
+    document.getElementById('clientDropdown').classList.add('open');
+    captureFormSnapshot();
+    updateManagerBadge();
 }
 
 function loadClientData(name) {
@@ -1585,6 +2047,7 @@ function loadClientData(name) {
     // 담당자 복원
     if (data['_manager'] !== undefined) {
         document.getElementById('managerSelect').value = data['_manager'] || '';
+        if (typeof syncManagerDisplay === 'function') syncManagerDisplay();
     }
     // 수동 변경 플래그 복원
     _bookManuallyChanged = (data['_bookManual'] === '1');
@@ -1609,19 +2072,23 @@ function deleteData() {
         _selectedClient = '';
         document.getElementById('clientSearch').value = '';
         updateClientList();
+        captureFormSnapshot();
+        updateManagerBadge();
         alert('삭제되었습니다.');
     }
 }
 
 function updateClientList(selectedName = '') {
     const clients = JSON.parse(localStorage.getItem('taxClients') || '{}');
-    _allClients = Object.keys(clients).sort();
+    _allClients = Object.keys(clients).sort((a, b) => a.localeCompare(b, 'ko'));
     if (selectedName) _selectedClient = selectedName;
 }
 
 // 초기 실행
 applyYears();
 updateClientList();
+captureFormSnapshot();
+updateManagerBadge();
 
 // ─── 엑셀 내보내기 (완전 재현 버전 v2) ──────────────────────────
 function exportToExcel() {
@@ -2116,6 +2583,343 @@ function buildCoverSheet(bizName, data) {
 
     return ws;
 }
+
+
+// ─── 엑셀 업로드 (담당자 선택 모달 + 키워드 검색 방식, 일괄 가져오기) ────
+let _pendingImport = null; // { filename, parsedList: [{bizName, data}], existingNames: Set }
+
+function importFromExcel(event) {
+    const file = event.target.files && event.target.files[0];
+    if (!file) return;
+    event.target.value = ''; // 같은 파일 재업로드 가능하게
+
+    const ensureXLSX = (cb) => {
+        if (typeof XLSX !== 'undefined') return cb();
+        const script = document.createElement('script');
+        script.src = 'https://cdn.jsdelivr.net/npm/xlsx-js-style@1.2.0/dist/xlsx.bundle.js';
+        script.onload = cb;
+        script.onerror = () => alert('SheetJS 라이브러리 로드 실패. 인터넷 연결을 확인하세요.');
+        document.head.appendChild(script);
+    };
+
+    ensureXLSX(() => {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            try {
+                const data = new Uint8Array(e.target.result);
+                const wb = XLSX.read(data, { type: 'array' });
+                _prepareImport(wb, file.name);
+            } catch (err) {
+                console.error(err);
+                alert('엑셀 파일 읽기 오류: ' + err.message);
+            }
+        };
+        reader.onerror = () => alert('파일 읽기 실패');
+        reader.readAsArrayBuffer(file);
+    });
+}
+
+function _extractManagerFromFilename(filename) {
+    if (!filename) return '';
+    const m = filename.match(/_\s*([^_/\\]+?)\s*\.xlsx?$/i);
+    return m ? m[1].trim() : '';
+}
+
+function _prepareImport(wb, filename) {
+    if (!wb || !wb.SheetNames || !wb.SheetNames.length) {
+        alert('업로드된 파일에 시트가 없습니다.');
+        return;
+    }
+    const existing = JSON.parse(localStorage.getItem('taxClients') || '{}');
+    const existingNames = new Set(Object.keys(existing));
+
+    const parsedList = [];
+    const failedSheets = [];
+    for (const sheetName of wb.SheetNames) {
+        try {
+            const grid = _sheetToGrid(wb.Sheets[sheetName]);
+            const parsed = _parseSheetByKeywords(grid, sheetName);
+            if (!parsed || !parsed.bizName) {
+                failedSheets.push(sheetName);
+                continue;
+            }
+            parsedList.push(parsed);
+        } catch (err) {
+            console.error('시트 파싱 오류:', sheetName, err);
+            failedSheets.push(sheetName);
+        }
+    }
+
+    if (parsedList.length === 0) {
+        alert('업로드된 엑셀에서 거래처 정보를 찾을 수 없습니다.\n\n' +
+              (failedSheets.length ? `[인식실패 시트]\n${failedSheets.slice(0,10).join(', ')}` : ''));
+        return;
+    }
+
+    let willAdd = 0, willSkip = 0;
+    for (const p of parsedList) {
+        if (existingNames.has(p.bizName)) willSkip++;
+        else willAdd++;
+    }
+
+    _pendingImport = { filename, parsedList, existingNames, failedSheets };
+
+    // 모달 띄우기
+    const modal = document.getElementById('excelImportModal');
+    const info = document.getElementById('excelImportModalInfo');
+    const sel  = document.getElementById('excelImportManagerSelect');
+    const mgrSelEl = document.getElementById('managerSelect');
+
+    // 담당자 옵션 복제 (managerSelect의 모든 옵션, 단 '전체'는 제외)
+    sel.innerHTML = '';
+    if (mgrSelEl) {
+        for (const opt of mgrSelEl.options) {
+            const v = opt.value || opt.textContent;
+            if (!v) continue; // '전체' (빈값) 제외
+            const o = document.createElement('option');
+            o.value = v; o.textContent = v;
+            sel.appendChild(o);
+        }
+    }
+    // 기본 선택값: 파일명 추출 → 화면 선택값 → 첫번째 옵션
+    const fromFile = _extractManagerFromFilename(filename);
+    const fromUI   = mgrSelEl ? mgrSelEl.value : '';
+    const validValues = Array.from(sel.options).map(o => o.value);
+    let defaultPick = '';
+    if (fromFile && validValues.includes(fromFile)) defaultPick = fromFile;
+    else if (fromUI && validValues.includes(fromUI)) defaultPick = fromUI;
+    else if (validValues.length) defaultPick = validValues[0];
+    sel.value = defaultPick;
+
+    let infoHtml = `📄 <b>${_escHtml(filename)}</b><br>` +
+                   `시트 ${wb.SheetNames.length}개 분석 → ` +
+                   `🆕 신규 ${willAdd}건 / ⏭ 중복 ${willSkip}건` +
+                   (failedSheets.length ? ` / ❌ 인식실패 ${failedSheets.length}건` : '') + '<br>';
+    if (fromFile && fromFile !== defaultPick) {
+        infoHtml += `<span style="color:#9ca3af;">파일명에서 감지한 담당자 "${_escHtml(fromFile)}"는 목록에 없어 무시했어요.</span>`;
+    } else if (fromFile) {
+        infoHtml += `<span style="color:#0369a1;">파일명에서 담당자 "${_escHtml(fromFile)}" 자동 감지됨.</span>`;
+    }
+    info.innerHTML = infoHtml;
+
+    modal.style.display = 'flex';
+}
+
+function _escHtml(s) {
+    return String(s || '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+function _cancelExcelImport() {
+    document.getElementById('excelImportModal').style.display = 'none';
+    _pendingImport = null;
+}
+
+function _confirmExcelImport() {
+    if (!_pendingImport) { _cancelExcelImport(); return; }
+    const sel = document.getElementById('excelImportManagerSelect');
+    const manager = sel ? sel.value : '';
+    if (!manager) { alert('담당자를 선택해주세요.'); return; }
+
+    const { filename, parsedList, existingNames, failedSheets } = _pendingImport;
+    const existing = JSON.parse(localStorage.getItem('taxClients') || '{}');
+    const beforeCount = Object.keys(existing).length;
+
+    const addedNames = [], skippedNames = [];
+    for (const { bizName, data } of parsedList) {
+        if (existingNames.has(bizName)) {
+            skippedNames.push(bizName);
+            continue;
+        }
+        data._manager = manager;
+        existing[bizName] = data;
+        addedNames.push(bizName);
+    }
+    localStorage.setItem('taxClients', JSON.stringify(existing));
+    if (typeof updateClientList === 'function') updateClientList();
+
+    document.getElementById('excelImportModal').style.display = 'none';
+    _pendingImport = null;
+
+    const trim = (arr, n=12) =>
+        arr.slice(0, n).join(', ') + (arr.length > n ? ` 외 ${arr.length - n}건` : '');
+    let msg = `📥 엑셀 업로드 완료\n` +
+              `(파일: ${filename || '(이름없음)'} · 담당자: ${manager})\n\n` +
+              `✅ 추가됨: ${addedNames.length}건\n` +
+              `⏭ 건너뜀(중복): ${skippedNames.length}건\n`;
+    if (failedSheets && failedSheets.length) msg += `❌ 인식실패: ${failedSheets.length}건\n`;
+    msg += `\n총 거래처: ${beforeCount} → ${Object.keys(existing).length}`;
+    if (addedNames.length)   msg += `\n\n[추가됨]\n` + trim(addedNames);
+    if (skippedNames.length) msg += `\n\n[건너뜀]\n` + trim(skippedNames);
+    if (failedSheets && failedSheets.length) msg += `\n\n[인식실패 시트]\n` + trim(failedSheets);
+    alert(msg);
+}
+
+function _sheetToGrid(ws) {
+    if (!ws || !ws['!ref']) return [];
+    const range = XLSX.utils.decode_range(ws['!ref']);
+    const grid = [];
+    for (let r = range.s.r; r <= range.e.r; r++) {
+        const row = [];
+        for (let c = range.s.c; c <= range.e.c; c++) {
+            const cell = ws[XLSX.utils.encode_cell({ r, c })];
+            row.push(cell && cell.v != null ? String(cell.v) : '');
+        }
+        grid.push(row);
+    }
+    const merges = ws['!merges'] || [];
+    for (const m of merges) {
+        const mr = m.s.r - range.s.r;
+        const mc = m.s.c - range.s.c;
+        if (mr < 0 || mr >= grid.length) continue;
+        if (mc < 0 || mc >= grid[mr].length) continue;
+        const masterVal = grid[mr][mc];
+        if (!masterVal) continue;
+        for (let r = m.s.r; r <= m.e.r; r++) {
+            for (let c = m.s.c; c <= m.e.c; c++) {
+                const rr = r - range.s.r, cc = c - range.s.c;
+                if (rr < 0 || rr >= grid.length) continue;
+                if (cc < 0 || cc >= grid[rr].length) continue;
+                if (rr === mr && cc === mc) continue;
+                if (!grid[rr][cc]) grid[rr][cc] = masterVal;
+            }
+        }
+    }
+    return grid;
+}
+
+function _normLabel(s) {
+    return String(s || '')
+        .replace(/\s+/g, '')
+        .replace(/[·.,()（）\-_/＼\\:：]/g, '')
+        .toLowerCase();
+}
+
+function _parseSheetByKeywords(grid, sheetName) {
+    if (!grid || !grid.length) return null;
+    const data = {};
+
+    const findLabel = (patterns) => {
+        const np = patterns.map(_normLabel);
+        for (let r = 0; r < grid.length; r++) {
+            for (let c = 0; c < grid[r].length; c++) {
+                const v = _normLabel(grid[r][c]);
+                if (v && np.some(p => v === p)) return { r, c };
+            }
+        }
+        for (let r = 0; r < grid.length; r++) {
+            for (let c = 0; c < grid[r].length; c++) {
+                const v = _normLabel(grid[r][c]);
+                if (v && np.some(p => p && v.includes(p))) return { r, c };
+            }
+        }
+        return null;
+    };
+
+    // 우측 인접 셀의 값 (병합 슬레이브로 라벨 그대로 채워진 셀은 건너뜀, 빈값이면 '')
+    const valueOf = (loc) => {
+        if (!loc) return '';
+        const { r, c } = loc;
+        const labelTxt = String((grid[r] || [])[c] || '').trim();
+        const maxC = Math.min((grid[r] || []).length, c + 6);
+        for (let cc = c + 1; cc < maxC; cc++) {
+            const raw = grid[r][cc];
+            if (raw == null || String(raw).trim() === '') continue;
+            const v = String(raw).trim();
+            if (labelTxt && v === labelTxt) continue;
+            return v;
+        }
+        return '';
+    };
+
+    let bizName = valueOf(findLabel(['상호', '거래처명', '회사명', '사업자명']));
+    if (!bizName) bizName = sheetName || '';
+    bizName = bizName.replace(/\s+/g, ' ').trim();
+    if (!bizName || /^Sheet\d*$/i.test(bizName)) return null;
+    data.bizName = bizName;
+
+    data.openDate    = valueOf(findLabel(['개업일', '개업년월일', '사업개시일']));
+    data.bizCode     = valueOf(findLabel(['업종코드']));
+    data.bizIndustry = valueOf(findLabel(['업태']));
+    data.bizItem     = valueOf(findLabel(['종목']));
+    data.taxOffice   = valueOf(findLabel(['신고세무서', '관할세무서']));
+    data.bookkeeping = valueOf(findLabel(['기장의무']));
+    data.estimateType= valueOf(findLabel(['추계유형']));
+
+    const stripVAT = (s) => String(s || '').replace(/\s*\(\s*VAT[^)]*\)\s*$/i, '').trim();
+    data.fee         = stripVAT(valueOf(findLabel(['조정보수'])));
+    data.monthlyFee  = stripVAT(valueOf(findLabel(['기장료'])));
+    data.otherIncome = valueOf(findLabel(['타소득', '기타소득']));
+    const stdRate    = valueOf(findLabel(['표준소득율', '표준소득률']));
+    data.stdIncomeRate = String(stdRate).replace(/%/g, '').trim();
+    data.memo        = valueOf(findLabel(['특이사항', '비고']));
+
+    let prevCol = -1, currCol = -1, headerRow = -1;
+    for (let r = 0; r < Math.min(grid.length, 25); r++) {
+        let pCol = -1, cCol = -1;
+        for (let c = 0; c < grid[r].length; c++) {
+            const v = String(grid[r][c] || '');
+            if (pCol === -1 && /전년/.test(v)) pCol = c;
+            if (cCol === -1 && /(당해|당년|당기)/.test(v)) cCol = c;
+        }
+        if (pCol !== -1 && cCol !== -1) { prevCol = pCol; currCol = cCol; headerRow = r; break; }
+    }
+
+    const extractYear = (re) => {
+        for (let r = 0; r < grid.length; r++) {
+            for (let c = 0; c < grid[r].length; c++) {
+                const v = String(grid[r][c] || '');
+                if (re.test(v)) {
+                    const m = v.match(/(\d{4})/);
+                    if (m) return parseInt(m[1], 10);
+                }
+            }
+        }
+        return null;
+    };
+    const yp = extractYear(/전년/);
+    const yc = extractYear(/(당해|당년|당기)/);
+    if (yp) data._yearPrev = yp;
+    if (yc) data._yearCurr = yc;
+
+    if (headerRow !== -1 && prevCol !== -1 && currCol !== -1) {
+        const tableMap = [
+            { keys: ['수입금액', '총수입금액', '매출'],         prev: 'rev24',   curr: 'rev25' },
+            { keys: ['필요경비'],                               prev: 'exp24',   curr: 'exp25' },
+            { keys: ['소득금액'],                               prev: 'inc24',   curr: 'inc25' },
+            { keys: ['과세표준'],                               prev: 'base24',  curr: 'base25' },
+            { keys: ['세율'],                                   prev: 'rate24',  curr: 'rate25' },
+            { keys: ['산출세액'],                               prev: 'tax24',   curr: 'tax25' },
+            { keys: ['중간예납'],                               prev: 'pre24',   curr: 'pre25' },
+            { keys: ['세액감면공제', '세액감면', '감면공제'],   prev: 'ded24',   curr: 'ded25' },
+            { keys: ['납부세액', '결정세액'],                   prev: 'final24', curr: 'final25' },
+            { keys: ['신고유형'],                               prev: 'type24',  curr: 'type25' },
+        ];
+        for (const { keys, prev, curr } of tableMap) {
+            const np = keys.map(_normLabel);
+            for (let r = headerRow + 1; r < Math.min(grid.length, headerRow + 25); r++) {
+                let labelCell = '';
+                for (let cc = 0; cc < Math.min(grid[r].length, 3); cc++) {
+                    if (cc !== prevCol && cc !== currCol) {
+                        const v = _normLabel(grid[r][cc]);
+                        if (v) { labelCell = v; break; }
+                    }
+                }
+                if (!labelCell) continue;
+                const matched = np.some(p => p && (labelCell === p || labelCell.includes(p)));
+                if (matched) {
+                    const pv = grid[r][prevCol];
+                    const cv = grid[r][currCol];
+                    if (pv != null && String(pv).trim()) data[prev] = String(pv).trim();
+                    if (cv != null && String(cv).trim()) data[curr] = String(cv).trim();
+                    break;
+                }
+            }
+        }
+    }
+    return { bizName, data };
+}
+// ─── /엑셀 업로드 ─────────────────────────────────────────────
+
 </script>
 <script>
 // 세율표 행 높이를 추계표 높이에 맞춰 균등 분배
