@@ -953,30 +953,100 @@
     </div><!-- /report-card -->
 </div><!-- /container -->
 
-<script>
+<script type="module">
 // ============================================================
-// localStorage 폴리필 (Claude 아티팩트 환경 대응)
+// Firebase Firestore 초기화 + 인메모리 캐시
 // ============================================================
-(function() {
-    try {
-        localStorage.setItem('__test__', '1');
-        localStorage.removeItem('__test__');
-    } catch (e) {
-        // localStorage 사용 불가 → 메모리 기반 폴백
-        var _memStore = {};
-        Object.defineProperty(window, 'localStorage', {
-            value: {
-                getItem: function(k) { return _memStore.hasOwnProperty(k) ? _memStore[k] : null; },
-                setItem: function(k, v) { _memStore[k] = String(v); },
-                removeItem: function(k) { delete _memStore[k]; },
-                clear: function() { _memStore = {}; },
-                get length() { return Object.keys(_memStore).length; },
-                key: function(i) { return Object.keys(_memStore)[i] || null; }
-            },
-            writable: false, configurable: false
-        });
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+const firebaseConfig = {
+    apiKey: "AIzaSyAvMQ7zeug3besBpJu6jPrr9tViH7Gk3ys",
+    authDomain: "gabin-0709.firebaseapp.com",
+    projectId: "gabin-0709",
+    storageBucket: "gabin-0709.firebasestorage.app",
+    messagingSenderId: "230936107733",
+    appId: "1:230936107733:web:d60bec65267e93a048e05c"
+};
+
+const _app = initializeApp(firebaseConfig);
+const _db = getFirestore(_app);
+const _clientsRef = doc(_db, 'taxData', 'taxClients');
+const _shiftRef   = doc(_db, 'taxData', 'shiftBackup');
+
+// ── 인메모리 캐시 ──────────────────────────────────────────
+window._fbCache = {};          // taxClients 전체 객체
+window._fbShiftCache = null;   // shift backup raw string
+
+// Firestore → 캐시 → localStorage 폴백 역할
+window.localStorage = {
+    _store: {},
+    getItem(k) {
+        if (k === 'taxClients') return JSON.stringify(window._fbCache);
+        if (k === '_taxShiftBackup') return window._fbShiftCache;
+        return this._store[k] ?? null;
+    },
+    setItem(k, v) {
+        if (k === 'taxClients') {
+            window._fbCache = JSON.parse(v);
+            // 비동기로 Firestore에 저장
+            setDoc(_clientsRef, window._fbCache).catch(e => console.error('Firebase 저장 오류:', e));
+        } else if (k === '_taxShiftBackup') {
+            window._fbShiftCache = v;
+            setDoc(_shiftRef, { data: v }).catch(e => console.error(e));
+        } else {
+            this._store[k] = v;
+        }
+    },
+    removeItem(k) {
+        if (k === '_taxShiftBackup') {
+            window._fbShiftCache = null;
+            setDoc(_shiftRef, {}).catch(e => console.error(e));
+        } else {
+            delete this._store[k];
+        }
     }
+};
+
+// ── 앱 시작: Firebase에서 데이터 로드 ──────────────────────
+(async () => {
+    // 로딩 표시
+    const bar = document.querySelector('.admin-bar');
+    const loadingMsg = document.createElement('div');
+    loadingMsg.id = '_fbLoadingMsg';
+    loadingMsg.style.cssText = 'position:fixed;top:0;left:0;right:0;background:#2563eb;color:#fff;text-align:center;padding:8px;font-size:13px;z-index:99999;';
+    loadingMsg.textContent = '☁ Firebase에서 데이터를 불러오는 중...';
+    document.body.prepend(loadingMsg);
+
+    try {
+        const [clientsSnap, shiftSnap] = await Promise.all([
+            getDoc(_clientsRef),
+            getDoc(_shiftRef)
+        ]);
+
+        if (clientsSnap.exists()) {
+            window._fbCache = clientsSnap.data() || {};
+        }
+        if (shiftSnap.exists() && shiftSnap.data().data) {
+            window._fbShiftCache = shiftSnap.data().data;
+        }
+
+        loadingMsg.style.background = '#059669';
+        loadingMsg.textContent = '✅ 데이터 로드 완료!';
+        setTimeout(() => loadingMsg.remove(), 1500);
+
+    } catch(e) {
+        loadingMsg.style.background = '#dc2626';
+        loadingMsg.textContent = '❌ Firebase 연결 실패: ' + e.message;
+        console.error(e);
+    }
+
+    // 거래처 목록 갱신 (데이터 로드 후)
+    if (typeof updateClientList === 'function') updateClientList();
+    if (typeof updateManagerBadge === 'function') updateManagerBadge();
 })();
+</script>
+<script>
 
 // ============================================================
 // 업종코드 데이터 (기준/단순 경비율 엑셀)
