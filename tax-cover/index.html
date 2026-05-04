@@ -447,7 +447,22 @@
             .approval-table .ap-body { height: 22px; }
             .pay-label, .pay-val { font-size: 10px !important; }
             @page { size: A4 portrait; margin: 8mm 8mm 8mm 8mm; }
+
+            /* 일괄 인쇄 모드 */
+            body.bulk-printing > .container { display: none !important; }
+            body.bulk-printing #_bulkPrintContainer { display: block !important; }
+            body.bulk-printing #_bulkPrintContainer ._bulk-print-page {
+                page-break-after: always !important;
+                page-break-inside: avoid !important;
+            }
+            body.bulk-printing #_bulkPrintContainer ._bulk-print-page:last-child {
+                page-break-after: auto !important;
+            }
+            body.bulk-printing #_bulkPrintContainer .file-margin { height: 10mm !important; }
         }
+
+        /* 일괄 인쇄 컨테이너는 평상시 숨김 */
+        #_bulkPrintContainer { display: none; }
 
         /* + key indicator */
         .plus-hint { font-size: 10px; color: #94a3b8; margin-left: 4px; }
@@ -470,6 +485,7 @@
             <span id="managerCountBadge" class="mgr-count-badge" style="display:none;"></span>
             <select id="managerSelect" onchange="onManagerChange()" style="display:none;">
                 <option value="">전체</option>
+                <option value="__none__">(미지정)</option>
                 <option>김희정</option>
                 <option>김미선</option>
                 <option>우선영</option>
@@ -502,6 +518,7 @@
             <button class="btn btn-outline" onclick="shiftYear()" title="당해 데이터를 전년으로 이월합니다">📅 이월</button>
             <button class="btn btn-outline" onclick="unshiftYear()" title="이월 직전 상태로 되돌립니다">↩️ 전년</button>
             <button class="btn btn-outline" onclick="doPrint()">🖨️ 인쇄</button>
+            <button class="btn" onclick="openBulkPrintModal()" style="background:#0c4a6e;color:white;font-weight:600;" title="담당자에게 배정된 모든 거래처의 표지를 한번에 인쇄합니다">📑 일괄 인쇄</button>
             <button class="btn" onclick="exportToExcel()" style="background:#1d6f42;color:white;font-weight:600;">📊 엑셀 내보내기</button>
             <button class="btn" onclick="document.getElementById('excelImportFile').click()" style="background:#0c4a6e;color:white;font-weight:600;">📥 엑셀 업로드</button>
             <input type="file" id="excelImportFile" accept=".xlsx,.xls" style="display:none;" onchange="importFromExcel(event)">
@@ -527,7 +544,7 @@
                 <p id="excelImportModalInfo" style="margin:0 0 14px 0; font-size:13px; color:#374151; line-height:1.5;"></p>
                 <label style="display:block; margin-bottom:6px; font-size:13px; font-weight:600;">담당자</label>
                 <select id="excelImportManagerSelect" style="width:100%; padding:8px 10px; border:1px solid #cbd5e1; border-radius:6px; font-size:14px; font-family:inherit;"></select>
-                <p style="margin:8px 0 0 0; font-size:11px; color:#6b7280;">선택한 담당자에게 신규 거래처가 일괄 배정됩니다. (같은 상호가 이미 있으면 건너뜁니다)</p>
+                <p style="margin:8px 0 0 0; font-size:11px; color:#6b7280;">선택한 담당자에게 신규 거래처가 일괄 배정됩니다. <b>(미지정)</b>을 고르면 담당자 없이 등록되며, 나중에 "👤 담당자 변경" 기능으로 배정할 수 있어요. (같은 상호가 이미 있으면 건너뜁니다)</p>
                 <div style="display:flex; gap:10px; justify-content:flex-end; margin-top:18px;">
                     <button class="btn btn-outline" onclick="_cancelExcelImport()" style="padding:7px 16px;">취소</button>
                     <button class="btn btn-primary" onclick="_confirmExcelImport()" style="padding:7px 16px;">가져오기</button>
@@ -562,6 +579,21 @@
                 <div style="display:flex; gap:10px; justify-content:flex-end; margin-top:14px;">
                     <button class="btn btn-outline" onclick="_cancelBulkDelete()" style="padding:7px 16px;">취소</button>
                     <button class="btn btn-danger" id="bulkDeleteConfirmBtn" onclick="_confirmBulkDelete()" style="padding:7px 16px;" disabled>선택한 0건 삭제</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 담당자별 일괄 인쇄 모달 -->
+        <div id="bulkPrintModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.45); z-index:9999; align-items:center; justify-content:center;">
+            <div style="background:#fff; padding:22px 26px; border-radius:10px; min-width:380px; max-width:480px; box-shadow:0 6px 24px rgba(0,0,0,0.25); font-family:inherit;">
+                <h3 style="margin:0 0 10px 0; font-size:16px; color:#0c4a6e;">📑 담당자별 표지 일괄 인쇄</h3>
+                <p style="margin:0 0 12px 0; font-size:12px; color:#6b7280; line-height:1.5;">선택한 담당자에게 배정된 모든 거래처의 표지를 한번에 인쇄합니다. <br>각 거래처는 새 페이지로 분리되어 출력돼요.</p>
+                <label style="display:block; margin-bottom:6px; font-size:13px; font-weight:600;">담당자</label>
+                <select id="bulkPrintManagerSelect" onchange="_updateBulkPrintInfo()" style="width:100%; padding:8px 10px; border:1px solid #cbd5e1; border-radius:6px; font-size:14px; font-family:inherit;"></select>
+                <p id="bulkPrintInfo" style="margin:10px 0 0 0; font-size:13px; color:#0369a1; font-weight:600;"></p>
+                <div style="display:flex; gap:10px; justify-content:flex-end; margin-top:18px;">
+                    <button class="btn btn-outline" onclick="_cancelBulkPrint()" style="padding:7px 16px;">취소</button>
+                    <button class="btn btn-primary" onclick="_runBulkPrint()" style="padding:7px 16px; background:#0c4a6e; border-color:#0c4a6e;">🖨️ 인쇄 시작</button>
                 </div>
             </div>
         </div>
@@ -1221,13 +1253,25 @@ window.addEventListener('beforeunload', function(e) {
 });
 
 // ═══ 담당자별 거래처 수 ═══════════════════════════════════════
+// 담당자 값이 미지정에 해당하는지 판정 (빈값 / '전체' / '__none__' / undefined 모두 미지정 처리)
+function _isUnassignedMgr(m) {
+    return !m || m === '전체' || m === '__none__';
+}
+
 function getManagerCounts() {
     const clients = JSON.parse(localStorage.getItem('taxClients') || '{}');
     const counts = {};
+    let unassigned = 0;
     Object.values(clients).forEach(d => {
         const m = (d && d._manager) || '';
-        counts[m] = (counts[m] || 0) + 1;
+        if (_isUnassignedMgr(m)) {
+            unassigned++;
+        } else {
+            counts[m] = (counts[m] || 0) + 1;
+        }
     });
+    counts['__none__'] = unassigned;
+    counts[''] = unassigned;  // 이전 코드 호환
     return counts;
 }
 
@@ -1241,7 +1285,8 @@ function updateManagerBadge() {
         return;
     }
     const counts = getManagerCounts();
-    badge.textContent = (counts[mgr] || 0) + '건';
+    const cnt = (mgr === '__none__') ? (counts['__none__'] || 0) : (counts[mgr] || 0);
+    badge.textContent = cnt + '건';
     badge.style.display = 'inline-block';
 }
 
@@ -1970,9 +2015,15 @@ function filterManagers() {
     const opts = Array.from(sel.options);
     const counts = getManagerCounts();
 
+    const _mgrDisplayName = (v) => {
+        if (v === '__none__') return '(미지정)';
+        if (v === '') return '전체';
+        return v;
+    };
+
     const filtered = opts.filter(o => {
-        const display = o.value || '전체';
-        return display.toLowerCase().includes(q);
+        const display = _mgrDisplayName(o.value);
+        return display.toLowerCase().includes(q) || (o.value === '__none__' && '미지정'.includes(q));
     });
     _mgrFiltered = filtered.map(o => o.value || '');
     _mgrActiveIdx = filtered.length > 0 ? 0 : -1;
@@ -1982,10 +2033,12 @@ function filterManagers() {
     } else {
         dd.innerHTML = filtered.map((o, idx) => {
             const v = o.value || '';
-            const display = v || '전체';
+            const display = _mgrDisplayName(v);
             const escV = v.replace(/'/g, "\\'");
-            // '전체'엔 카운트 표시 안 함 / 다른 담당자엔 (n) 표시
-            const cnt = v ? (counts[v] || 0) : null;
+            // '전체'엔 카운트 표시 안 함 / 미지정·담당자엔 (n) 표시
+            let cnt = null;
+            if (v === '__none__') cnt = (counts['__none__'] || 0);
+            else if (v) cnt = (counts[v] || 0);
             const cntHtml = (cnt !== null) ? `<span class="item-count">(${cnt})</span>` : '';
             const cls = idx === _mgrActiveIdx ? 'dd-item active' : 'dd-item';
             return `<div class="${cls}" data-idx="${idx}" onclick="selectManager('${escV}')">${display}${cntHtml}</div>`;
@@ -2008,7 +2061,7 @@ function selectManager(value) {
     const sel = document.getElementById('managerSelect');
     sel.value = value;
     const inp = document.getElementById('managerSearch');
-    inp.value = value || '전체';
+    inp.value = (value === '__none__') ? '(미지정)' : (value || '전체');
     inp._prevValue = undefined;
     document.getElementById('managerDropdown').classList.remove('open');
     onManagerChange();
@@ -2042,7 +2095,9 @@ function handleManagerSearchKey(e) {
 function syncManagerDisplay() {
     const sel = document.getElementById('managerSelect');
     const inp = document.getElementById('managerSearch');
-    if (sel && inp) inp.value = sel.value || '전체';
+    if (sel && inp) {
+        inp.value = (sel.value === '__none__') ? '(미지정)' : (sel.value || '전체');
+    }
 }
 
 // ─── 거래처 검색 드롭다운 ─────────────────────────────────────
@@ -2075,9 +2130,12 @@ function filterClients() {
 
     const filtered = _allClients.filter(name => {
         if (!name.toLowerCase().includes(q)) return false;
-        if (manager) {
-            const d = clients[name];
-            if (!d || d['_manager'] !== manager) return false;
+        const d = clients[name];
+        const cur = (d && d['_manager']) || '';
+        if (manager === '__none__') {
+            if (!_isUnassignedMgr(cur)) return false;  // 미지정만
+        } else if (manager) {
+            if (cur !== manager) return false;
         }
         return true;
     });
@@ -2224,8 +2282,8 @@ function saveData() {
     data['_bizCodeHint'] = document.getElementById('bizCodeHint').textContent;
     data['_yearPrev'] = yearPrev;
     data['_yearCurr'] = yearCurr;
-    // 담당자 저장
-    data['_manager'] = mgr;
+    // 담당자 저장 ('__none__' / '전체'는 미지정으로 정규화하여 빈 문자열 저장)
+    data['_manager'] = _isUnassignedMgr(mgr) ? '' : mgr;
     // 기장의무판단·경비율판단 수동 변경 플래그
     data['_bookManual'] = _bookManuallyChanged ? '1' : '';
     data['_expCatManual'] = _expCatManuallyChanged ? '1' : '';
@@ -2295,9 +2353,16 @@ function loadClientData(name) {
         hint.style.display = 'inline-block';
     }
     if (data['_yearPrev']) { yearPrev = data['_yearPrev']; yearCurr = data['_yearCurr'] || yearPrev + 1; applyYears(); }
-    // 담당자 복원
+    // 담당자 복원 (단, 현재 필터가 (미지정)이고 거래처 담당자가 비어있으면 필터 유지)
     if (data['_manager'] !== undefined) {
-        document.getElementById('managerSelect').value = data['_manager'] || '';
+        const _mgrSelEl = document.getElementById('managerSelect');
+        const _mgrCur = _mgrSelEl ? _mgrSelEl.value : '';
+        const _newMgr = data['_manager'] || '';
+        if (_mgrCur === '__none__' && !_newMgr) {
+            // 미지정 필터 유지
+        } else {
+            _mgrSelEl.value = _newMgr;
+        }
         if (typeof syncManagerDisplay === 'function') syncManagerDisplay();
     }
     // 수동 변경 플래그 복원
@@ -2348,8 +2413,9 @@ function openBulkDeleteModal() {
     const mgrSel = document.getElementById('managerSelect');
     const mgrOpts = mgrSel ? Array.from(mgrSel.options) : [];
     filter.innerHTML = '<option value="">(전체 담당자)</option>' +
+        '<option value="__none__">(미지정)</option>' +
         mgrOpts
-            .filter(o => o.value)
+            .filter(o => o.value && o.value !== '__none__')
             .map(o => `<option value="${_escHtmlAttr(o.value)}">${_escHtml(o.value)}</option>`)
             .join('');
 
@@ -2375,12 +2441,19 @@ function _bulkDeleteFiltered() {
     const names = Object.keys(clients).sort((a, b) => a.localeCompare(b, 'ko'));
     return names.filter(name => {
         if (q && !name.toLowerCase().includes(q)) return false;
-        if (mgr) {
+        if (mgr === '__none__') {
+            const d = clients[name];
+            const cur = (d && d['_manager']) || '';
+            if (!_isUnassignedMgr(cur)) return false;
+        } else if (mgr) {
             const d = clients[name];
             if (!d || d['_manager'] !== mgr) return false;
         }
         return true;
-    }).map(name => ({ name, manager: (clients[name] && clients[name]['_manager']) || '' }));
+    }).map(name => {
+        const cur = (clients[name] && clients[name]['_manager']) || '';
+        return { name, manager: _isUnassignedMgr(cur) ? '' : cur };
+    });
 }
 
 // 체크 상태 보존을 위해 모달 단위로 유지
@@ -2512,10 +2585,12 @@ let _mgrChgChecked = new Set();      // 체크된 거래처명
 let _mgrChgPending = {};             // { name: 새 담당자 } - 현재 담당자와 다른 변경분만 보관
 
 function _mgrChgManagerOptions() {
-    // 메인 담당자 셀렉트의 옵션을 기반으로 (값 있는 옵션만)
+    // 메인 담당자 셀렉트의 옵션을 기반으로 (값 있는 옵션만, '__none__' 제외)
     const sel = document.getElementById('managerSelect');
     if (!sel) return [];
-    return Array.from(sel.options).filter(o => o.value).map(o => o.value);
+    return Array.from(sel.options)
+        .filter(o => o.value && o.value !== '__none__')
+        .map(o => o.value);
 }
 
 function openManagerChangeModal() {
@@ -2574,12 +2649,16 @@ function _mgrChgFiltered() {
         if (q && !name.toLowerCase().includes(q)) return false;
         const cur = (clients[name] && clients[name]['_manager']) || '';
         if (mgrFilter === '__none__') {
-            if (cur) return false;
+            if (!_isUnassignedMgr(cur)) return false;
         } else if (mgrFilter) {
             if (cur !== mgrFilter) return false;
         }
         return true;
-    }).map(name => ({ name, current: (clients[name] && clients[name]['_manager']) || '' }));
+    }).map(name => {
+        const cur = (clients[name] && clients[name]['_manager']) || '';
+        // 미지정과 동등한 값('전체' 등)은 모두 미지정으로 정규화하여 표시
+        return { name, current: _isUnassignedMgr(cur) ? '' : cur };
+    });
 }
 
 function renderMgrChangeList() {
@@ -2768,6 +2847,195 @@ function _confirmMgrChange() {
 }
 // ─── /거래처 담당자 변경 ──────────────────────────────────────
 
+// ─── 담당자별 표지 일괄 인쇄 ──────────────────────────────────
+function openBulkPrintModal() {
+    const modal = document.getElementById('bulkPrintModal');
+    const sel = document.getElementById('bulkPrintManagerSelect');
+    const mgrSelMain = document.getElementById('managerSelect');
+    const mgrs = mgrSelMain ? Array.from(mgrSelMain.options).filter(o => o.value).map(o => o.value) : [];
+
+    sel.innerHTML =
+        '<option value="__all__">(전체 거래처)</option>' +
+        '<option value="__none__">(담당자 미지정만)</option>' +
+        mgrs.map(m => `<option value="${_escHtmlAttr(m)}">${_escHtml(m)}</option>`).join('');
+
+    // 현재 담당자가 선택돼 있으면 기본값으로
+    if (mgrSelMain && mgrSelMain.value) sel.value = mgrSelMain.value;
+
+    _updateBulkPrintInfo();
+    modal.style.display = 'flex';
+}
+
+function _updateBulkPrintInfo() {
+    const sel = document.getElementById('bulkPrintManagerSelect');
+    const info = document.getElementById('bulkPrintInfo');
+    if (!sel || !info) return;
+    const v = sel.value;
+    const clients = JSON.parse(localStorage.getItem('taxClients') || '{}');
+    let count;
+    if (v === '__all__') {
+        count = Object.keys(clients).length;
+    } else if (v === '__none__') {
+        count = Object.values(clients).filter(d => _isUnassignedMgr((d && d._manager) || '')).length;
+    } else {
+        count = Object.values(clients).filter(d => ((d && d._manager) || '') === v).length;
+    }
+    info.textContent = `대상 거래처: ${count}건`;
+    info.style.color = count === 0 ? '#dc2626' : '#0369a1';
+}
+
+function _cancelBulkPrint() {
+    document.getElementById('bulkPrintModal').style.display = 'none';
+}
+
+async function _runBulkPrint() {
+    const sel = document.getElementById('bulkPrintManagerSelect');
+    const v = sel.value;
+    const clients = JSON.parse(localStorage.getItem('taxClients') || '{}');
+    let names = Object.keys(clients).sort((a, b) => a.localeCompare(b, 'ko'));
+    let label;
+    if (v === '__all__') {
+        label = '전체';
+    } else if (v === '__none__') {
+        names = names.filter(n => _isUnassignedMgr((clients[n] && clients[n]._manager) || ''));
+        label = '담당자 미지정';
+    } else {
+        names = names.filter(n => ((clients[n] && clients[n]._manager) || '') === v);
+        label = v;
+    }
+
+    if (names.length === 0) {
+        alert('대상 거래처가 없습니다.');
+        return;
+    }
+
+    if (typeof isDirty === 'function' && isDirty()) {
+        if (!confirm('현재 폼에 저장되지 않은 변경사항이 있습니다.\n인쇄 후 원래 거래처로 돌아오지만, 변경사항이 사라질 수 있어요.\n계속하시겠습니까?')) return;
+    }
+
+    if (!confirm(`[${label}] 담당자의 거래처 ${names.length}건의 표지를 일괄 인쇄합니다.\n계속하시겠습니까?`)) return;
+
+    document.getElementById('bulkPrintModal').style.display = 'none';
+
+    // 진행 안내 오버레이
+    const overlay = document.createElement('div');
+    overlay.id = '_bulkPrintOverlay';
+    overlay.style.cssText = 'position:fixed; inset:0; background:rgba(0,0,0,0.6); z-index:10002; display:flex; align-items:center; justify-content:center; color:white; font-size:16px; font-weight:600; text-align:center; padding:20px; line-height:1.6;';
+    overlay.innerHTML = `🖨️ 인쇄 준비 중...<br><span id="_bulkPrintProgress">0 / ${names.length}</span>`;
+    document.body.appendChild(overlay);
+
+    // 현재 거래처 백업
+    const prevSelected = (typeof _selectedClient !== 'undefined' ? _selectedClient : '') ||
+        (document.getElementById('clientSearch') && document.getElementById('clientSearch').value) || '';
+
+    // 인쇄용 컨테이너 (혹시 남아있으면 제거)
+    const oldC = document.getElementById('_bulkPrintContainer');
+    if (oldC) oldC.remove();
+    const container = document.createElement('div');
+    container.id = '_bulkPrintContainer';
+    document.body.appendChild(container);
+
+    const printSrc = document.getElementById('printArea');
+
+    try {
+        for (let i = 0; i < names.length; i++) {
+            const name = names[i];
+            const prog = document.getElementById('_bulkPrintProgress');
+            if (prog) prog.textContent = `${i + 1} / ${names.length} — ${name}`;
+
+            // 거래처 데이터를 폼에 로드
+            loadClientData(name);
+            // DOM 반영 대기
+            await new Promise(r => setTimeout(r, 30));
+
+            // printArea 복제
+            const clone = printSrc.cloneNode(true);
+            // ID 중복 방지
+            if (clone.id) clone.removeAttribute('id');
+            clone.querySelectorAll('[id]').forEach(el => el.removeAttribute('id'));
+            // no-print 클래스 가진 버튼 등 제거 (연도수정 버튼 등)
+            clone.querySelectorAll('.no-print').forEach(el => el.remove());
+
+            // 폼 값을 HTML 속성으로 동결 (clone은 화면에 mount되지 않으므로 .value만으론 인쇄 시 비어 보일 수 있음)
+            const srcEls = printSrc.querySelectorAll('input, select, textarea');
+            const dstEls = clone.querySelectorAll('input, select, textarea');
+            for (let j = 0; j < srcEls.length; j++) {
+                const s = srcEls[j], d = dstEls[j];
+                if (!s || !d) continue;
+                if (s.tagName === 'INPUT') {
+                    if (s.type === 'checkbox' || s.type === 'radio') {
+                        d.checked = s.checked;
+                        if (s.checked) d.setAttribute('checked', ''); else d.removeAttribute('checked');
+                    } else {
+                        d.setAttribute('value', s.value);
+                        try { d.value = s.value; } catch (e) {}
+                    }
+                } else if (s.tagName === 'TEXTAREA') {
+                    d.textContent = s.value;
+                    try { d.value = s.value; } catch (e) {}
+                } else if (s.tagName === 'SELECT') {
+                    Array.from(d.options).forEach(o => o.removeAttribute('selected'));
+                    const idx = s.selectedIndex;
+                    if (idx >= 0 && d.options[idx]) {
+                        d.options[idx].setAttribute('selected', 'selected');
+                        try { d.selectedIndex = idx; } catch (e) {}
+                    }
+                }
+            }
+
+            // 페이지 wrapper
+            const pageWrap = document.createElement('div');
+            pageWrap.className = '_bulk-print-page';
+            const margin = document.createElement('div');
+            margin.className = 'file-margin';
+            pageWrap.appendChild(margin);
+            pageWrap.appendChild(clone);
+            container.appendChild(pageWrap);
+        }
+
+        // 원래 거래처로 복원
+        if (prevSelected) {
+            loadClientData(prevSelected);
+            const inp = document.getElementById('clientSearch');
+            if (inp) inp.value = prevSelected;
+        } else {
+            loadClientData('');
+        }
+        if (typeof captureFormSnapshot === 'function') captureFormSnapshot();
+
+        // 드롭다운 닫기
+        ['managerDropdown', 'clientDropdown', 'bizCodeDropdown'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.classList.remove('open');
+        });
+
+        // 인쇄 모드 활성화
+        document.body.classList.add('bulk-printing');
+        if (overlay && overlay.parentNode) overlay.remove();
+
+        // 인쇄
+        setTimeout(() => {
+            window.print();
+            // 정리
+            setTimeout(() => {
+                document.body.classList.remove('bulk-printing');
+                const c = document.getElementById('_bulkPrintContainer');
+                if (c) c.remove();
+            }, 800);
+        }, 200);
+    } catch (err) {
+        console.error('[bulkPrint] 오류:', err);
+        if (overlay && overlay.parentNode) overlay.remove();
+        const c = document.getElementById('_bulkPrintContainer');
+        if (c) c.remove();
+        document.body.classList.remove('bulk-printing');
+        // 복원
+        if (prevSelected) loadClientData(prevSelected); else loadClientData('');
+        alert('일괄 인쇄 중 오류가 발생했습니다: ' + (err && err.message ? err.message : err));
+    }
+}
+// ─── /담당자별 표지 일괄 인쇄 ─────────────────────────────────
+
 
 // 초기 실행 — Firebase 모듈이 데이터 로드 후 updateClientList/updateManagerBadge를 호출함
 applyYears();
@@ -2787,27 +3055,29 @@ function exportToExcel() {
         return;
     }
 
+    const _isNone = (selectedManager === '__none__');
+    const _label = _isNone ? '미지정' : selectedManager;
     const filteredClients = [];
     for (const [name, data] of Object.entries(clients)) {
         const mgr = data['_manager'] || '';
-        if (mgr === selectedManager) {
+        if (_isNone ? _isUnassignedMgr(mgr) : (mgr === selectedManager)) {
             filteredClients.push({ name, data });
         }
     }
 
     if (filteredClients.length === 0) {
-        alert(`[${selectedManager}] 담당자의 거래처 데이터가 없습니다.`);
+        alert(`[${_label}] 담당자의 거래처 데이터가 없습니다.`);
         return;
     }
 
     if (typeof XLSX === 'undefined') {
         const script = document.createElement('script');
         script.src = 'https://cdn.jsdelivr.net/npm/xlsx-js-style@1.2.0/dist/xlsx.bundle.js';
-        script.onload = () => doCoverExport(selectedManager, filteredClients);
+        script.onload = () => doCoverExport(_label, filteredClients);
         script.onerror = () => alert('SheetJS 라이브러리 로드 실패. 인터넷 연결을 확인하세요.');
         document.head.appendChild(script);
     } else {
-        doCoverExport(selectedManager, filteredClients);
+        doCoverExport(_label, filteredClients);
     }
 }
 
@@ -3353,25 +3623,32 @@ function _prepareImport(wb, filename) {
     const sel  = document.getElementById('excelImportManagerSelect');
     const mgrSelEl = document.getElementById('managerSelect');
 
-    // 담당자 옵션 복제 (managerSelect의 모든 옵션, 단 '전체'는 제외)
+    // 담당자 옵션 구성: (미지정) 먼저 + managerSelect 옵션들 (단 '전체'와 기존 __none__는 제외)
     sel.innerHTML = '';
+    {
+        const noneOpt = document.createElement('option');
+        noneOpt.value = '__none__';
+        noneOpt.textContent = '(미지정 — 나중에 배정)';
+        sel.appendChild(noneOpt);
+    }
     if (mgrSelEl) {
         for (const opt of mgrSelEl.options) {
             const v = opt.value || opt.textContent;
-            if (!v) continue; // '전체' (빈값) 제외
+            if (!v) continue;            // '전체' (빈값) 제외
+            if (v === '__none__') continue; // 메인 셀렉트의 (미지정) 중복 방지
             const o = document.createElement('option');
             o.value = v; o.textContent = v;
             sel.appendChild(o);
         }
     }
-    // 기본 선택값: 파일명 추출 → 화면 선택값 → 첫번째 옵션
+    // 기본 선택값: 파일명 추출 → 화면 선택값 → (미지정)
     const fromFile = _extractManagerFromFilename(filename);
-    const fromUI   = mgrSelEl ? mgrSelEl.value : '';
+    const fromUIRaw = mgrSelEl ? mgrSelEl.value : '';
+    const fromUI = (fromUIRaw === '__none__') ? '' : fromUIRaw;
     const validValues = Array.from(sel.options).map(o => o.value);
-    let defaultPick = '';
+    let defaultPick = '__none__';
     if (fromFile && validValues.includes(fromFile)) defaultPick = fromFile;
     else if (fromUI && validValues.includes(fromUI)) defaultPick = fromUI;
-    else if (validValues.length) defaultPick = validValues[0];
     sel.value = defaultPick;
 
     let infoHtml = `📄 <b>${_escHtml(filename)}</b><br>` +
@@ -3400,8 +3677,10 @@ function _cancelExcelImport() {
 function _confirmExcelImport() {
     if (!_pendingImport) { _cancelExcelImport(); return; }
     const sel = document.getElementById('excelImportManagerSelect');
-    const manager = sel ? sel.value : '';
-    if (!manager) { alert('담당자를 선택해주세요.'); return; }
+    const raw = sel ? sel.value : '__none__';
+    // (미지정) → 빈 문자열로 저장
+    const manager = (raw === '__none__') ? '' : raw;
+    const managerLabel = manager || '(미지정)';
 
     const { filename, parsedList, existingNames, failedSheets } = _pendingImport;
     const existing = JSON.parse(localStorage.getItem('taxClients') || '{}');
@@ -3426,7 +3705,7 @@ function _confirmExcelImport() {
     const trim = (arr, n=12) =>
         arr.slice(0, n).join(', ') + (arr.length > n ? ` 외 ${arr.length - n}건` : '');
     let msg = `📥 엑셀 업로드 완료\n` +
-              `(파일: ${filename || '(이름없음)'} · 담당자: ${manager})\n\n` +
+              `(파일: ${filename || '(이름없음)'} · 담당자: ${managerLabel})\n\n` +
               `✅ 추가됨: ${addedNames.length}건\n` +
               `⏭ 건너뜀(중복): ${skippedNames.length}건\n`;
     if (failedSheets && failedSheets.length) msg += `❌ 인식실패: ${failedSheets.length}건\n`;
