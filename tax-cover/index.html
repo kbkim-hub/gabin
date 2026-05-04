@@ -46,7 +46,7 @@
             flex-wrap: wrap;
         }
 
-        .client-selector { display: flex; gap: 6px; align-items: center; flex-wrap: nowrap; overflow: visible; min-width: 0; }
+        .client-selector { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; overflow: visible; min-width: 0; row-gap: 8px; }
         .admin-bar { overflow: visible !important; }
 
         /* 검색 드롭다운 */
@@ -487,7 +487,7 @@
             </select>
             <span class="label" style="margin-left:8px;">거래처 선택:</span>
             <!-- 검색 가능한 드롭다운 -->
-            <div class="search-wrap" id="clientSearchWrap">
+            <div class="search-wrap" id="clientSearchWrap" style="width:340px;">
                 <input type="text" id="clientSearch" placeholder="🔍 거래처 검색..." autocomplete="off"
                     oninput="filterClients()" onfocus="openDropdown()" onkeydown="handleSearchKey(event)">
                 <span class="search-icon">▾</span>
@@ -497,6 +497,8 @@
             <button class="btn btn-primary" onclick="saveData()">💾 저장</button>
             <button class="btn btn-danger" onclick="deleteData()">🗑️ 삭제</button>
             <button class="btn btn-danger" onclick="openBulkDeleteModal()" style="background:#7f1d1d;" title="여러 거래처를 한번에 선택하여 삭제합니다">🗑️ 일괄 삭제</button>
+            <button class="btn" onclick="openManagerChangeModal()" style="background:#0f766e;color:white;font-weight:600;" title="거래처의 담당자를 일괄/건별로 변경합니다">👤 담당자 변경</button>
+            <div style="flex-basis:100%; height:0; margin:0; padding:0;"></div>
             <button class="btn btn-outline" onclick="shiftYear()" title="당해 데이터를 전년으로 이월합니다">📅 이월</button>
             <button class="btn btn-outline" onclick="unshiftYear()" title="이월 직전 상태로 되돌립니다">↩️ 전년</button>
             <button class="btn btn-outline" onclick="doPrint()">🖨️ 인쇄</button>
@@ -563,6 +565,53 @@
                 </div>
             </div>
         </div>
+
+        <!-- 거래처 담당자 변경 모달 (일괄/건별) -->
+        <div id="managerChangeModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.45); z-index:9999; align-items:center; justify-content:center;">
+            <div style="background:#fff; padding:20px 22px; border-radius:10px; width:720px; max-width:95vw; max-height:90vh; box-shadow:0 6px 24px rgba(0,0,0,0.25); font-family:inherit; display:flex; flex-direction:column;">
+                <h3 style="margin:0 0 6px 0; font-size:16px; color:#0f766e;">👤 거래처 담당자 변경</h3>
+                <p style="margin:0 0 12px 0; font-size:12px; color:#6b7280; line-height:1.55;">
+                    <b style="color:#0f766e;">일괄 변경:</b> 좌측 체크박스로 거래처를 선택한 뒤, 하단의 "선택 일괄 적용" 영역에서 담당자를 골라 적용을 누르면 한꺼번에 바뀝니다.<br>
+                    <b style="color:#0f766e;">건별 변경:</b> 각 행 우측의 셀렉트박스로 행마다 담당자를 다르게 지정할 수 있습니다. 마지막에 <b>"변경사항 저장"</b> 버튼을 눌러야 실제로 저장됩니다.
+                </p>
+
+                <!-- 검색 / 필터 -->
+                <div style="display:flex; gap:8px; margin-bottom:10px; flex-wrap:wrap;">
+                    <input type="text" id="mgrChgSearch" placeholder="🔍 거래처 검색..." autocomplete="off"
+                        oninput="renderMgrChangeList()"
+                        style="flex:1; min-width:160px; padding:7px 10px; border:1px solid #cbd5e1; border-radius:6px; font-size:13px; font-family:inherit;">
+                    <select id="mgrChgFilter" onchange="renderMgrChangeList()"
+                        style="padding:7px 10px; border:1px solid #cbd5e1; border-radius:6px; font-size:13px; font-family:inherit; min-width:150px;"></select>
+                </div>
+
+                <!-- 헤더 -->
+                <div style="display:flex; align-items:center; justify-content:space-between; padding:6px 4px; border-top:1px solid #e5e7eb; border-bottom:1px solid #e5e7eb; margin-bottom:6px; gap:8px;">
+                    <label style="display:flex; align-items:center; gap:6px; font-size:13px; cursor:pointer; font-weight:600; min-width:110px;">
+                        <input type="checkbox" id="mgrChgSelectAll" onchange="toggleMgrChgSelectAll()" style="width:15px; height:15px; cursor:pointer;">
+                        <span>전체선택</span>
+                    </label>
+                    <span id="mgrChgSummary" style="font-size:12px; color:#6b7280; flex:1; text-align:right;">0 / 0 선택됨</span>
+                </div>
+
+                <!-- 리스트 -->
+                <div id="mgrChgList" style="flex:1; overflow-y:auto; min-height:220px; max-height:360px; border:1px solid #e5e7eb; border-radius:6px; background:#f9fafb;"></div>
+
+                <!-- 일괄 적용 영역 -->
+                <div style="margin-top:10px; padding:10px 12px; border:1px dashed #0f766e; border-radius:8px; background:#ecfdf5; display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+                    <span style="font-size:13px; font-weight:600; color:#0f766e;">선택 항목 일괄 적용 →</span>
+                    <select id="mgrChgBulkTarget" style="padding:6px 10px; border:1px solid #cbd5e1; border-radius:6px; font-size:13px; min-width:150px; font-family:inherit; background:#fff;"></select>
+                    <button class="btn" onclick="applyBulkManagerChange()" style="background:#0f766e; color:white; padding:6px 14px; font-size:13px; font-weight:600;">✓ 적용</button>
+                    <span style="font-size:11px; color:#6b7280;">선택된 행의 담당자를 한번에 바꿉니다</span>
+                </div>
+
+                <!-- 하단 버튼 -->
+                <div style="display:flex; gap:10px; justify-content:flex-end; margin-top:14px;">
+                    <button class="btn btn-outline" onclick="_cancelMgrChange()" style="padding:7px 16px;">취소</button>
+                    <button class="btn btn-primary" id="mgrChgConfirmBtn" onclick="_confirmMgrChange()" style="padding:7px 16px; background:#0f766e; border-color:#0f766e;" disabled>변경사항 저장 (0건)</button>
+                </div>
+            </div>
+        </div>
+
         <div>
         </div>
     </div>
@@ -955,12 +1004,12 @@
 
 <script type="module">
 // ============================================================
-// Firebase Firestore 초기화 + 인메모리 캐시
+// Firebase Firestore - 데이터를 먼저 불러온 뒤 앱 초기화
 // ============================================================
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
-const firebaseConfig = {
+const _fbConfig = {
     apiKey: "AIzaSyAvMQ7zeug3besBpJu6jPrr9tViH7Gk3ys",
     authDomain: "gabin-0709.firebaseapp.com",
     projectId: "gabin-0709",
@@ -968,82 +1017,87 @@ const firebaseConfig = {
     messagingSenderId: "230936107733",
     appId: "1:230936107733:web:d60bec65267e93a048e05c"
 };
+const _fbApp  = initializeApp(_fbConfig);
+const _fbDb   = getFirestore(_fbApp);
+const _fbClientsRef = doc(_fbDb, 'taxData', 'taxClients');
+const _fbShiftRef   = doc(_fbDb, 'taxData', 'shiftBackup');
 
-const _app = initializeApp(firebaseConfig);
-const _db = getFirestore(_app);
-const _clientsRef = doc(_db, 'taxData', 'taxClients');
-const _shiftRef   = doc(_db, 'taxData', 'shiftBackup');
+// ── 인메모리 캐시 (localStorage를 완전 대체) ──────────────────
+window._fbClientsCache = {};
+window._fbShiftCache   = null;
 
-// ── 인메모리 캐시 ──────────────────────────────────────────
-window._fbCache = {};          // taxClients 전체 객체
-window._fbShiftCache = null;   // shift backup raw string
-
-// Firestore → 캐시 → localStorage 폴백 역할
-window.localStorage = {
-    _store: {},
+// localStorage 전체를 Firebase 연동 객체로 교체
+const _fbStorage = {
     getItem(k) {
-        if (k === 'taxClients') return JSON.stringify(window._fbCache);
+        if (k === 'taxClients') return JSON.stringify(window._fbClientsCache);
         if (k === '_taxShiftBackup') return window._fbShiftCache;
-        return this._store[k] ?? null;
+        return null;
     },
     setItem(k, v) {
         if (k === 'taxClients') {
-            window._fbCache = JSON.parse(v);
-            // 비동기로 Firestore에 저장
-            setDoc(_clientsRef, window._fbCache).catch(e => console.error('Firebase 저장 오류:', e));
+            window._fbClientsCache = JSON.parse(v);
+            setDoc(_fbClientsRef, window._fbClientsCache).catch(e => console.error('[FB] 저장 오류:', e));
         } else if (k === '_taxShiftBackup') {
             window._fbShiftCache = v;
-            setDoc(_shiftRef, { data: v }).catch(e => console.error(e));
-        } else {
-            this._store[k] = v;
+            setDoc(_fbShiftRef, { data: v }).catch(e => console.error('[FB] 이월백업 저장 오류:', e));
         }
     },
     removeItem(k) {
         if (k === '_taxShiftBackup') {
             window._fbShiftCache = null;
-            setDoc(_shiftRef, {}).catch(e => console.error(e));
-        } else {
-            delete this._store[k];
+            setDoc(_fbShiftRef, {}).catch(e => console.error(e));
         }
     }
 };
 
-// ── 앱 시작: Firebase에서 데이터 로드 ──────────────────────
-(async () => {
-    // 로딩 표시
-    const bar = document.querySelector('.admin-bar');
-    const loadingMsg = document.createElement('div');
-    loadingMsg.id = '_fbLoadingMsg';
-    loadingMsg.style.cssText = 'position:fixed;top:0;left:0;right:0;background:#2563eb;color:#fff;text-align:center;padding:8px;font-size:13px;z-index:99999;';
-    loadingMsg.textContent = '☁ Firebase에서 데이터를 불러오는 중...';
-    document.body.prepend(loadingMsg);
+// ── 로딩 배너 ─────────────────────────────────────────────────
+const _banner = document.createElement('div');
+_banner.style.cssText = 'position:fixed;top:0;left:0;right:0;background:#2563eb;color:#fff;text-align:center;padding:9px 12px;font-size:13px;font-weight:600;z-index:99999;letter-spacing:0.3px;';
+_banner.textContent = '☁ Firebase에서 데이터를 불러오는 중...';
+document.body.prepend(_banner);
 
+// ── Firebase에서 데이터 로드 후 앱 초기화 ─────────────────────
+(async () => {
     try {
         const [clientsSnap, shiftSnap] = await Promise.all([
-            getDoc(_clientsRef),
-            getDoc(_shiftRef)
+            getDoc(_fbClientsRef),
+            getDoc(_fbShiftRef)
         ]);
 
         if (clientsSnap.exists()) {
-            window._fbCache = clientsSnap.data() || {};
+            window._fbClientsCache = clientsSnap.data() || {};
         }
         if (shiftSnap.exists() && shiftSnap.data().data) {
             window._fbShiftCache = shiftSnap.data().data;
         }
 
-        loadingMsg.style.background = '#059669';
-        loadingMsg.textContent = '✅ 데이터 로드 완료!';
-        setTimeout(() => loadingMsg.remove(), 1500);
+        // localStorage를 Firebase 연동 객체로 교체
+        Object.defineProperty(window, 'localStorage', {
+            value: _fbStorage,
+            writable: true,
+            configurable: true
+        });
+
+        _banner.style.background = '#059669';
+        _banner.textContent = '✅ 데이터 로드 완료! (거래처 ' + Object.keys(window._fbClientsCache).length + '건)';
+        setTimeout(() => { _banner.style.display='none'; }, 2000);
 
     } catch(e) {
-        loadingMsg.style.background = '#dc2626';
-        loadingMsg.textContent = '❌ Firebase 연결 실패: ' + e.message;
-        console.error(e);
+        _banner.style.background = '#dc2626';
+        _banner.textContent = '❌ Firebase 연결 실패 — Firestore 보안 규칙을 확인해주세요. (' + e.message + ')';
+        console.error('[FB] 연결 오류:', e);
+        // 실패해도 앱은 빈 상태로 계속 실행
+        Object.defineProperty(window, 'localStorage', {
+            value: _fbStorage,
+            writable: true,
+            configurable: true
+        });
     }
 
-    // 거래처 목록 갱신 (데이터 로드 후)
+    // 데이터 로드 완료 후 거래처 목록·배지 갱신
     if (typeof updateClientList === 'function') updateClientList();
     if (typeof updateManagerBadge === 'function') updateManagerBadge();
+    if (typeof filterClients === 'function') filterClients();
 })();
 </script>
 <script>
@@ -2453,11 +2507,271 @@ if (typeof _escHtmlAttr !== 'function') {
 }
 // ─── /거래처 일괄 삭제 ────────────────────────────────────────
 
-// 초기 실행
+// ─── 거래처 담당자 변경 (일괄 / 건별) ─────────────────────────
+let _mgrChgChecked = new Set();      // 체크된 거래처명
+let _mgrChgPending = {};             // { name: 새 담당자 } - 현재 담당자와 다른 변경분만 보관
+
+function _mgrChgManagerOptions() {
+    // 메인 담당자 셀렉트의 옵션을 기반으로 (값 있는 옵션만)
+    const sel = document.getElementById('managerSelect');
+    if (!sel) return [];
+    return Array.from(sel.options).filter(o => o.value).map(o => o.value);
+}
+
+function openManagerChangeModal() {
+    const modal = document.getElementById('managerChangeModal');
+    if (!modal) return;
+
+    // 상태 초기화
+    _mgrChgChecked = new Set();
+    _mgrChgPending = {};
+
+    const search = document.getElementById('mgrChgSearch');
+    const filter = document.getElementById('mgrChgFilter');
+    const bulkTarget = document.getElementById('mgrChgBulkTarget');
+    const selAll = document.getElementById('mgrChgSelectAll');
+
+    const mgrs = _mgrChgManagerOptions();
+
+    // 담당자 필터 옵션 (전체 / 미지정 / 담당자들)
+    filter.innerHTML =
+        '<option value="">(전체 담당자)</option>' +
+        '<option value="__none__">(미지정)</option>' +
+        mgrs.map(m => `<option value="${_escHtmlAttr(m)}">${_escHtml(m)}</option>`).join('');
+
+    // 일괄 적용 셀렉트 (미지정 옵션 포함)
+    bulkTarget.innerHTML =
+        '<option value="">(미지정 / 비우기)</option>' +
+        mgrs.map(m => `<option value="${_escHtmlAttr(m)}">${_escHtml(m)}</option>`).join('');
+
+    // 현재 메인에서 선택된 담당자가 있으면 필터 기본값으로
+    const mainSel = document.getElementById('managerSelect');
+    if (mainSel && mainSel.value) filter.value = mainSel.value;
+
+    if (search) search.value = '';
+    if (selAll) selAll.checked = false;
+
+    renderMgrChangeList();
+    modal.style.display = 'flex';
+}
+
+function _cancelMgrChange() {
+    // 변경사항이 있고 저장하지 않은 채 닫으면 확인
+    if (Object.keys(_mgrChgPending).length > 0) {
+        if (!confirm('저장하지 않은 담당자 변경사항이 있습니다.\n정말 닫으시겠습니까?')) return;
+    }
+    _mgrChgChecked = new Set();
+    _mgrChgPending = {};
+    document.getElementById('managerChangeModal').style.display = 'none';
+}
+
+function _mgrChgFiltered() {
+    const q = (document.getElementById('mgrChgSearch').value || '').toLowerCase();
+    const mgrFilter = document.getElementById('mgrChgFilter').value || '';
+    const clients = JSON.parse(localStorage.getItem('taxClients') || '{}');
+    const names = Object.keys(clients).sort((a, b) => a.localeCompare(b, 'ko'));
+    return names.filter(name => {
+        if (q && !name.toLowerCase().includes(q)) return false;
+        const cur = (clients[name] && clients[name]['_manager']) || '';
+        if (mgrFilter === '__none__') {
+            if (cur) return false;
+        } else if (mgrFilter) {
+            if (cur !== mgrFilter) return false;
+        }
+        return true;
+    }).map(name => ({ name, current: (clients[name] && clients[name]['_manager']) || '' }));
+}
+
+function renderMgrChangeList() {
+    const listEl = document.getElementById('mgrChgList');
+    if (!listEl) return;
+    const items = _mgrChgFiltered();
+    const mgrs = _mgrChgManagerOptions();
+
+    if (items.length === 0) {
+        listEl.innerHTML = '<div style="padding:24px; text-align:center; font-size:13px; color:#9ca3af;">조건에 맞는 거래처가 없습니다.</div>';
+    } else {
+        listEl.innerHTML = items.map(({ name, current }) => {
+            const id = 'mc_' + btoa(unescape(encodeURIComponent(name))).replace(/[^a-zA-Z0-9]/g, '');
+            const checked = _mgrChgChecked.has(name) ? 'checked' : '';
+            const pending = Object.prototype.hasOwnProperty.call(_mgrChgPending, name);
+            const newVal = pending ? _mgrChgPending[name] : current;
+            const changedTag = (pending && newVal !== current)
+                ? `<span style="color:#0f766e; font-size:11px; font-weight:700; margin-left:6px;">● 변경예정</span>`
+                : '';
+            const curTag = `<span style="color:#94a3b8; font-size:11px; margin-left:6px;">현재: ${current ? _escHtml(current) : '<i style=\'color:#cbd5e1;\'>미지정</i>'}</span>`;
+            const opts =
+                `<option value="">(미지정)</option>` +
+                mgrs.map(m => `<option value="${_escHtmlAttr(m)}"${m === newVal ? ' selected' : ''}>${_escHtml(m)}</option>`).join('');
+            return `<div style="display:flex; align-items:center; gap:8px; padding:7px 10px; border-bottom:1px solid #eef2f7; font-size:13px; background:#fff;">
+                <input type="checkbox" id="${id}" data-name="${_escHtmlAttr(name)}" ${checked} onchange="onMgrChgItemToggle(this)" style="width:15px; height:15px; cursor:pointer;">
+                <label for="${id}" style="flex:1; min-width:0; cursor:pointer; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">
+                    <span style="font-weight:500;">${_escHtml(name)}</span>${curTag}${changedTag}
+                </label>
+                <select data-name="${_escHtmlAttr(name)}" data-current="${_escHtmlAttr(current)}" onchange="onMgrChgRowSelect(this)"
+                    style="padding:4px 6px; border:1px solid ${pending ? '#0f766e' : '#cbd5e1'}; border-radius:5px; font-size:12px; min-width:120px; font-family:inherit; ${pending ? 'background:#ecfdf5; font-weight:600; color:#0f766e;' : 'background:#fff;'}">
+                    ${opts}
+                </select>
+            </div>`;
+        }).join('');
+    }
+    _updateMgrChgSummary(items);
+}
+
+function onMgrChgItemToggle(cb) {
+    const name = cb.getAttribute('data-name');
+    if (cb.checked) _mgrChgChecked.add(name);
+    else _mgrChgChecked.delete(name);
+    _updateMgrChgSummary();
+}
+
+function toggleMgrChgSelectAll() {
+    const selAll = document.getElementById('mgrChgSelectAll');
+    const items = _mgrChgFiltered();
+    if (selAll.checked) {
+        items.forEach(({ name }) => _mgrChgChecked.add(name));
+    } else {
+        items.forEach(({ name }) => _mgrChgChecked.delete(name));
+    }
+    document.querySelectorAll('#mgrChgList input[type="checkbox"]').forEach(cb => {
+        cb.checked = selAll.checked;
+    });
+    _updateMgrChgSummary(items);
+}
+
+function _updateMgrChgSummary(items) {
+    if (!items) items = _mgrChgFiltered();
+    const visibleNames = new Set(items.map(i => i.name));
+    let visibleChecked = 0;
+    visibleNames.forEach(n => { if (_mgrChgChecked.has(n)) visibleChecked++; });
+
+    const summary = document.getElementById('mgrChgSummary');
+    if (summary) {
+        let txt = `${visibleChecked} / ${items.length} 선택됨`;
+        if (_mgrChgChecked.size > visibleChecked) {
+            txt += ` (필터 외 ${_mgrChgChecked.size - visibleChecked}건 추가 선택)`;
+        }
+        const pendingCount = Object.keys(_mgrChgPending).length;
+        if (pendingCount > 0) {
+            txt += `  ·  변경예정 ${pendingCount}건`;
+        }
+        summary.textContent = txt;
+    }
+
+    const selAll = document.getElementById('mgrChgSelectAll');
+    if (selAll) selAll.checked = items.length > 0 && visibleChecked === items.length;
+
+    const btn = document.getElementById('mgrChgConfirmBtn');
+    if (btn) {
+        const n = Object.keys(_mgrChgPending).length;
+        btn.textContent = `변경사항 저장 (${n}건)`;
+        btn.disabled = n === 0;
+    }
+}
+
+// 행별 셀렉트 변경 → 건별 변경 처리
+function onMgrChgRowSelect(sel) {
+    const name = sel.getAttribute('data-name');
+    const current = sel.getAttribute('data-current') || '';
+    const newVal = sel.value;
+    if (newVal === current) {
+        delete _mgrChgPending[name];
+    } else {
+        _mgrChgPending[name] = newVal;
+    }
+    // 행 스타일/뱃지 갱신을 위해 다시 렌더 (간단)
+    renderMgrChangeList();
+}
+
+// 일괄 적용: 체크된 행들의 담당자를 한번에 변경
+function applyBulkManagerChange() {
+    const target = document.getElementById('mgrChgBulkTarget').value;
+    const checkedNames = Array.from(_mgrChgChecked);
+    if (checkedNames.length === 0) {
+        alert('일괄 변경할 거래처를 먼저 체크해주세요.');
+        return;
+    }
+
+    const clients = JSON.parse(localStorage.getItem('taxClients') || '{}');
+    let added = 0;
+    checkedNames.forEach(name => {
+        const cur = (clients[name] && clients[name]['_manager']) || '';
+        if (target === cur) {
+            // 동일하면 변경예정에서 제거
+            delete _mgrChgPending[name];
+        } else {
+            _mgrChgPending[name] = target;
+            added++;
+        }
+    });
+
+    renderMgrChangeList();
+    const label = target ? target : '(미지정)';
+    if (added > 0) {
+        // 살짝 안내
+        const summary = document.getElementById('mgrChgSummary');
+        if (summary) {
+            const old = summary.textContent;
+            summary.textContent = `✓ ${added}건을 "${label}"(으)로 변경예정 처리`;
+            setTimeout(() => _updateMgrChgSummary(), 1500);
+        }
+    } else {
+        alert('변경할 항목이 없습니다. (선택한 거래처가 이미 해당 담당자입니다)');
+    }
+}
+
+// 변경사항 저장
+function _confirmMgrChange() {
+    const entries = Object.entries(_mgrChgPending);
+    if (entries.length === 0) return;
+
+    const preview = entries.slice(0, 10).map(([n, v]) => `· ${n} → ${v || '(미지정)'}`).join('\n')
+        + (entries.length > 10 ? `\n... 외 ${entries.length - 10}건` : '');
+    if (!confirm(`다음 ${entries.length}건의 거래처 담당자를 변경합니다.\n\n${preview}\n\n진행하시겠습니까?`)) return;
+
+    const clients = JSON.parse(localStorage.getItem('taxClients') || '{}');
+    let changed = 0;
+    const currentlyOpen = (typeof _selectedClient !== 'undefined' && _selectedClient) || (document.getElementById('clientSearch') && document.getElementById('clientSearch').value) || '';
+    let refreshOpen = false;
+
+    entries.forEach(([name, newMgr]) => {
+        if (!clients[name]) return;
+        clients[name]['_manager'] = newMgr || '';
+        changed++;
+        if (name === currentlyOpen) refreshOpen = true;
+    });
+
+    localStorage.setItem('taxClients', JSON.stringify(clients));
+
+    // 화면 갱신
+    if (typeof updateClientList === 'function') updateClientList();
+    if (typeof updateManagerBadge === 'function') updateManagerBadge();
+
+    // 현재 폼에 띄워져 있던 거래처의 담당자가 바뀐 경우 폼의 담당자도 동기화
+    if (refreshOpen) {
+        const newMgr = clients[currentlyOpen] && clients[currentlyOpen]['_manager'] ? clients[currentlyOpen]['_manager'] : '';
+        const sel = document.getElementById('managerSelect');
+        if (sel) {
+            sel.value = newMgr;
+            if (typeof syncManagerSearchInput === 'function') syncManagerSearchInput();
+            if (typeof onManagerChange === 'function') {
+                // managerSelect의 onchange가 필터 역할이라면 호출 시 사이드이펙트 가능 → 여기서는 호출 안 함
+            }
+        }
+        if (typeof captureFormSnapshot === 'function') captureFormSnapshot();
+    }
+
+    _mgrChgPending = {};
+    _mgrChgChecked = new Set();
+    document.getElementById('managerChangeModal').style.display = 'none';
+    alert(`✅ ${changed}건의 거래처 담당자가 변경되었습니다.`);
+}
+// ─── /거래처 담당자 변경 ──────────────────────────────────────
+
+
+// 초기 실행 — Firebase 모듈이 데이터 로드 후 updateClientList/updateManagerBadge를 호출함
 applyYears();
-updateClientList();
 captureFormSnapshot();
-updateManagerBadge();
 
 // ─── 엑셀 내보내기 (완전 재현 버전 v2) ──────────────────────────
 function exportToExcel() {
