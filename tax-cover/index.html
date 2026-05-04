@@ -493,6 +493,7 @@
                 <span class="search-icon">▾</span>
                 <div class="search-dropdown" id="clientDropdown"></div>
             </div>
+            <button class="btn" onclick="newClient()" style="background:#4f46e5; color:white; font-weight:600;" title="폼을 비우고 새 거래처 입력을 시작합니다">🆕 신규</button>
             <button class="btn btn-primary" onclick="saveData()">💾 저장</button>
             <button class="btn btn-danger" onclick="deleteData()">🗑️ 삭제</button>
             <button class="btn btn-danger" onclick="openBulkDeleteModal()" style="background:#7f1d1d;" title="여러 거래처를 한번에 선택하여 삭제합니다">🗑️ 일괄 삭제</button>
@@ -2003,6 +2004,56 @@ async function selectClient(name) {
     loadClientData(name);
     captureFormSnapshot();
 }
+
+// ─── 신규 거래처 ──────────────────────────────────────────────
+async function newClient() {
+    if (isDirty()) {
+        const action = await askDirtyAction('현재 입력 중인 데이터가 저장되지 않았습니다.<br><b>새 거래처</b> 입력으로 이동하시겠어요?');
+        if (action === 'cancel') return;
+        if (action === 'save') {
+            const bizName = document.getElementById('bizName').value.trim();
+            if (!bizName) {
+                alert('현재 폼에 거래처 상호가 비어있어 저장할 수 없습니다. 먼저 상호를 입력하거나 "변경 버리고 이동"을 선택해주세요.');
+                return;
+            }
+            saveData();
+        }
+    }
+    // 현재 담당자 값 보존
+    const mgrSelEl = document.getElementById('managerSelect');
+    const keepManager = mgrSelEl ? mgrSelEl.value : '';
+
+    // 폼 전체 초기화 + 검색창 / 선택 상태 비우기
+    _selectedClient = '';
+    const inp = document.getElementById('clientSearch');
+    if (inp) { inp.value = ''; inp._prevValue = undefined; }
+    document.getElementById('clientDropdown').classList.remove('open');
+    loadClientData('');
+
+    // 담당자는 유지
+    if (mgrSelEl) {
+        mgrSelEl.value = keepManager;
+        if (typeof syncManagerDisplay === 'function') syncManagerDisplay();
+    }
+
+    // 자동판단 마크 초기화 (loadClientData('')에서 이미 처리되지만 안전)
+    _bookManuallyChanged = false;
+    _expCatManuallyChanged = false;
+
+    // 변경사항 비교 기준점을 빈 폼으로 갱신
+    captureFormSnapshot();
+
+    // 커서를 상호 인풋으로 이동
+    const bizNameEl = document.getElementById('bizName');
+    if (bizNameEl) {
+        bizNameEl.focus();
+        // 시야로 스크롤
+        if (typeof bizNameEl.scrollIntoView === 'function') {
+            bizNameEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+    }
+}
+// ─── /신규 거래처 ─────────────────────────────────────────────
 
 function handleSearchKey(e) {
     const dd = document.getElementById('clientDropdown');
