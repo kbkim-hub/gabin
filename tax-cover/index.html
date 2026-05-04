@@ -493,11 +493,12 @@
                 <span class="search-icon">▾</span>
                 <div class="search-dropdown" id="clientDropdown"></div>
             </div>
-            <button class="btn btn-primary" onclick="saveData()">💾 저장/수정</button>
+            <button class="btn btn-primary" onclick="saveData()">💾 저장</button>
             <button class="btn btn-danger" onclick="deleteData()">🗑️ 삭제</button>
-            <button class="btn btn-outline" onclick="shiftYear()" title="당해 데이터를 전년으로 이월합니다">📅 이월 (당해→전년)</button>
-            <button class="btn btn-outline" onclick="unshiftYear()" title="이월 직전 상태로 되돌립니다">↩️ 되돌리기</button>
-            <button class="btn btn-outline" onclick="doPrint()">🖨️ 인쇄/PDF</button>
+            <button class="btn btn-danger" onclick="openBulkDeleteModal()" style="background:#7f1d1d;" title="여러 거래처를 한번에 선택하여 삭제합니다">🗑️ 일괄 삭제</button>
+            <button class="btn btn-outline" onclick="shiftYear()" title="당해 데이터를 전년으로 이월합니다">📅 이월</button>
+            <button class="btn btn-outline" onclick="unshiftYear()" title="이월 직전 상태로 되돌립니다">↩️ 전년</button>
+            <button class="btn btn-outline" onclick="doPrint()">🖨️ 인쇄</button>
             <button class="btn" onclick="exportToExcel()" style="background:#1d6f42;color:white;font-weight:600;">📊 엑셀 내보내기</button>
             <button class="btn" onclick="document.getElementById('excelImportFile').click()" style="background:#0c4a6e;color:white;font-weight:600;">📥 엑셀 업로드</button>
             <input type="file" id="excelImportFile" accept=".xlsx,.xls" style="display:none;" onchange="importFromExcel(event)">
@@ -527,6 +528,37 @@
                 <div style="display:flex; gap:10px; justify-content:flex-end; margin-top:18px;">
                     <button class="btn btn-outline" onclick="_cancelExcelImport()" style="padding:7px 16px;">취소</button>
                     <button class="btn btn-primary" onclick="_confirmExcelImport()" style="padding:7px 16px;">가져오기</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 거래처 일괄 삭제 모달 -->
+        <div id="bulkDeleteModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.45); z-index:9999; align-items:center; justify-content:center;">
+            <div style="background:#fff; padding:20px 22px; border-radius:10px; width:520px; max-width:90vw; max-height:85vh; box-shadow:0 6px 24px rgba(0,0,0,0.25); font-family:inherit; display:flex; flex-direction:column;">
+                <h3 style="margin:0 0 10px 0; font-size:16px; color:#b91c1c;">🗑️ 거래처 일괄 삭제</h3>
+                <p style="margin:0 0 12px 0; font-size:12px; color:#6b7280; line-height:1.5;">삭제할 거래처를 체크한 뒤 하단의 삭제 버튼을 눌러주세요. 삭제된 데이터는 복구할 수 없습니다.</p>
+
+                <div style="display:flex; gap:8px; margin-bottom:10px; flex-wrap:wrap;">
+                    <input type="text" id="bulkDeleteSearch" placeholder="🔍 거래처 검색..." autocomplete="off"
+                        oninput="renderBulkDeleteList()"
+                        style="flex:1; min-width:140px; padding:7px 10px; border:1px solid #cbd5e1; border-radius:6px; font-size:13px; font-family:inherit;">
+                    <select id="bulkDeleteManagerFilter" onchange="renderBulkDeleteList()"
+                        style="padding:7px 10px; border:1px solid #cbd5e1; border-radius:6px; font-size:13px; font-family:inherit; min-width:120px;"></select>
+                </div>
+
+                <div style="display:flex; align-items:center; justify-content:space-between; padding:6px 4px; border-top:1px solid #e5e7eb; border-bottom:1px solid #e5e7eb; margin-bottom:6px;">
+                    <label style="display:flex; align-items:center; gap:6px; font-size:13px; cursor:pointer; font-weight:600;">
+                        <input type="checkbox" id="bulkDeleteSelectAll" onchange="toggleBulkSelectAll()" style="width:15px; height:15px; cursor:pointer;">
+                        <span>전체선택</span>
+                    </label>
+                    <span id="bulkDeleteSummary" style="font-size:12px; color:#6b7280;">0 / 0 선택됨</span>
+                </div>
+
+                <div id="bulkDeleteList" style="flex:1; overflow-y:auto; min-height:180px; max-height:340px; border:1px solid #e5e7eb; border-radius:6px; background:#f9fafb;"></div>
+
+                <div style="display:flex; gap:10px; justify-content:flex-end; margin-top:14px;">
+                    <button class="btn btn-outline" onclick="_cancelBulkDelete()" style="padding:7px 16px;">취소</button>
+                    <button class="btn btn-danger" id="bulkDeleteConfirmBtn" onclick="_confirmBulkDelete()" style="padding:7px 16px;" disabled>선택한 0건 삭제</button>
                 </div>
             </div>
         </div>
@@ -1511,7 +1543,7 @@ function onExpCatManualChange(yr) {
     updateBookExpInfo();
 }
 
-function recalcBookExp() {
+function recalcBookExp(silent = false) {
     const autoBook = judgeBookkeeping();
     const autoExp  = judgeExpenseCategory(autoBook);
 
@@ -1523,11 +1555,13 @@ function recalcBookExp() {
     // book25 처리
     if (autoBook) {
         if (_bookManuallyChanged && book25El.value && book25El.value !== autoBook) {
-            // 사용자 수동값과 자동값 다르면 확인
-            if (confirm(`기장의무판단 자동값(${autoBook})과 현재 선택(${book25El.value})이 다릅니다.\n자동값으로 변경하시겠습니까?`)) {
-                book25El.value = autoBook;
-                _bookManuallyChanged = false;
-                if (bookMark) bookMark.style.display = 'inline-block';
+            // 사용자 수동값과 자동값 다르면 확인 (silent 모드면 스킵)
+            if (!silent) {
+                if (confirm(`기장의무판단 자동값(${autoBook})과 현재 선택(${book25El.value})이 다릅니다.\n자동값으로 변경하시겠습니까?`)) {
+                    book25El.value = autoBook;
+                    _bookManuallyChanged = false;
+                    if (bookMark) bookMark.style.display = 'inline-block';
+                }
             }
         } else if (!_bookManuallyChanged) {
             book25El.value = autoBook;
@@ -1538,10 +1572,12 @@ function recalcBookExp() {
     // expCat25 처리
     if (autoExp) {
         if (_expCatManuallyChanged && expCat25El.value && expCat25El.value !== autoExp) {
-            if (confirm(`경비율판단 자동값(${autoExp})과 현재 선택(${expCat25El.value})이 다릅니다.\n자동값으로 변경하시겠습니까?`)) {
-                expCat25El.value = autoExp;
-                _expCatManuallyChanged = false;
-                if (expMark) expMark.style.display = 'inline-block';
+            if (!silent) {
+                if (confirm(`경비율판단 자동값(${autoExp})과 현재 선택(${expCat25El.value})이 다릅니다.\n자동값으로 변경하시겠습니까?`)) {
+                    expCat25El.value = autoExp;
+                    _expCatManuallyChanged = false;
+                    if (expMark) expMark.style.display = 'inline-block';
+                }
             }
         } else if (!_expCatManuallyChanged) {
             expCat25El.value = autoExp;
@@ -1620,14 +1656,20 @@ function calcAll() {
 
         if (base > 0 && bracket) {
             document.getElementById('rate'+yr).value = (bracket.rate * 100) + '%';
-            const tax = (base * bracket.rate) - bracket.ded;
-            document.getElementById('tax'+yr).value = Math.max(0, tax).toLocaleString();
+            // 산출세액: 국고금관리법 제47조에 따라 10원 미만 끝수(1~9원) 절사
+            const taxRaw = (base * bracket.rate) - bracket.ded;
+            const taxPos = Math.max(0, taxRaw);
+            const tax = Math.floor(taxPos / 10) * 10;
+            document.getElementById('tax'+yr).value = tax.toLocaleString();
         } else {
             document.getElementById('rate'+yr).value = '';
             document.getElementById('tax'+yr).value = '0';
         }
 
-        const final = n('tax'+yr) - n('pre'+yr) - n('ded'+yr);
+        // 납부세액 = 산출세액 - 중간예납 - 세액감면·공제
+        // 국고금관리법 제47조: 양수 납부세액의 10원 미만 끝수(1~9원) 절사
+        const finalRaw = n('tax'+yr) - n('pre'+yr) - n('ded'+yr);
+        const final = finalRaw > 0 ? Math.floor(finalRaw / 10) * 10 : finalRaw;
         document.getElementById('final'+yr).value = final.toLocaleString();
 
         // 신고소득율 = 소득금액 / 수입금액 * 100
@@ -1758,6 +1800,11 @@ document.addEventListener('click', function(e) {
     }
     if (!document.getElementById('clientSearchWrap').contains(e.target)) {
         document.getElementById('clientDropdown').classList.remove('open');
+        const cInp = document.getElementById('clientSearch');
+        if (cInp && cInp._prevValue !== undefined && cInp.value === '') {
+            cInp.value = cInp._prevValue;
+            cInp._prevValue = undefined;
+        }
     }
     const mgrWrap = document.getElementById('managerSearchWrap');
     if (mgrWrap && !mgrWrap.contains(e.target)) {
@@ -1878,6 +1925,10 @@ let _allClients = [];
 let _selectedClient = '';
 
 function openDropdown() {
+    const inp = document.getElementById('clientSearch');
+    // 담당자 드롭다운과 동일한 패턴: 열 때 입력값 백업하고 비워서 전체 목록 표시
+    inp._prevValue = inp.value;
+    inp.value = '';
     filterClients();
     document.getElementById('clientDropdown').classList.add('open');
 }
@@ -1945,7 +1996,9 @@ async function selectClient(name) {
         }
     }
     _selectedClient = name;
-    document.getElementById('clientSearch').value = name;
+    const _inpSel = document.getElementById('clientSearch');
+    _inpSel.value = name;
+    _inpSel._prevValue = undefined;
     document.getElementById('clientDropdown').classList.remove('open');
     loadClientData(name);
     captureFormSnapshot();
@@ -2009,7 +2062,9 @@ function saveData() {
     alert('저장되었습니다.');
     updateClientList(name);
     // 저장된 거래처를 검색창과 드롭다운에 즉시 반영 (드롭다운 열어두기)
-    document.getElementById('clientSearch').value = name;
+    const _inpSv = document.getElementById('clientSearch');
+    _inpSv.value = name;
+    _inpSv._prevValue = undefined;
     filterClients();
     document.getElementById('clientDropdown').classList.add('open');
     captureFormSnapshot();
@@ -2050,6 +2105,13 @@ function loadClientData(name) {
             el.checked = (data[key] === '1' || data[key] === true);
         } else {
             el.value = data[key];
+            // 숫자 입력 필드는 천단위 콤마 자동 적용 (엑셀 업로드 raw 값 대응)
+            // num-input 클래스 또는 oninput에 formatComma가 걸린 모든 인풋(예: fee, monthlyFee)
+            if (typeof formatComma === 'function' &&
+                ((el.classList && el.classList.contains('num-input')) ||
+                 /formatComma/.test((el.getAttribute && el.getAttribute('oninput')) || ''))) {
+                formatComma(el);
+            }
         }
     }
     if (data['_bizCodeHint']) {
@@ -2073,6 +2135,8 @@ function loadClientData(name) {
     if (expMark) expMark.style.display = (!_expCatManuallyChanged && document.getElementById('expCat25').value) ? 'inline-block' : 'none';
 
     calcAll();
+    // 거래처 로드 시 기장의무/경비율 자동 판단 (수동 설정 보존, confirm 스킵)
+    if (typeof recalcBookExp === 'function') recalcBookExp(true);
     updateBookExpInfo();
 }
 
@@ -2097,6 +2161,176 @@ function updateClientList(selectedName = '') {
     _allClients = Object.keys(clients).sort((a, b) => a.localeCompare(b, 'ko'));
     if (selectedName) _selectedClient = selectedName;
 }
+
+// ─── 거래처 일괄 삭제 ─────────────────────────────────────────
+function openBulkDeleteModal() {
+    const modal = document.getElementById('bulkDeleteModal');
+    const filter = document.getElementById('bulkDeleteManagerFilter');
+    const search = document.getElementById('bulkDeleteSearch');
+    const selAll = document.getElementById('bulkDeleteSelectAll');
+
+    // 담당자 필터 옵션 채우기 (현재 담당자 셀렉트의 옵션을 그대로 가져옴)
+    const mgrSel = document.getElementById('managerSelect');
+    const mgrOpts = mgrSel ? Array.from(mgrSel.options) : [];
+    filter.innerHTML = '<option value="">(전체 담당자)</option>' +
+        mgrOpts
+            .filter(o => o.value)
+            .map(o => `<option value="${_escHtmlAttr(o.value)}">${_escHtml(o.value)}</option>`)
+            .join('');
+
+    // 현재 선택된 담당자가 있으면 기본값으로 설정
+    if (mgrSel && mgrSel.value) filter.value = mgrSel.value;
+
+    // 검색창 / 전체선택 초기화
+    search.value = '';
+    selAll.checked = false;
+
+    renderBulkDeleteList();
+    modal.style.display = 'flex';
+}
+
+function _cancelBulkDelete() {
+    document.getElementById('bulkDeleteModal').style.display = 'none';
+}
+
+function _bulkDeleteFiltered() {
+    const q = (document.getElementById('bulkDeleteSearch').value || '').toLowerCase();
+    const mgr = document.getElementById('bulkDeleteManagerFilter').value || '';
+    const clients = JSON.parse(localStorage.getItem('taxClients') || '{}');
+    const names = Object.keys(clients).sort((a, b) => a.localeCompare(b, 'ko'));
+    return names.filter(name => {
+        if (q && !name.toLowerCase().includes(q)) return false;
+        if (mgr) {
+            const d = clients[name];
+            if (!d || d['_manager'] !== mgr) return false;
+        }
+        return true;
+    }).map(name => ({ name, manager: (clients[name] && clients[name]['_manager']) || '' }));
+}
+
+// 체크 상태 보존을 위해 모달 단위로 유지
+let _bulkDeleteChecked = new Set();
+
+function renderBulkDeleteList() {
+    const listEl = document.getElementById('bulkDeleteList');
+    const items = _bulkDeleteFiltered();
+
+    // 현재 보이는 목록에 없는 체크는 그대로 유지 (필터 해제 시 복원되도록)
+    if (items.length === 0) {
+        listEl.innerHTML = '<div style="padding:24px; text-align:center; font-size:13px; color:#9ca3af;">조건에 맞는 거래처가 없습니다.</div>';
+    } else {
+        listEl.innerHTML = items.map(({ name, manager }) => {
+            const id = 'bd_' + btoa(unescape(encodeURIComponent(name))).replace(/[^a-zA-Z0-9]/g, '');
+            const checked = _bulkDeleteChecked.has(name) ? 'checked' : '';
+            const mgrTag = manager
+                ? `<span style="color:#94a3b8; font-size:11px; margin-left:6px;">[${_escHtml(manager)}]</span>`
+                : '';
+            return `<label for="${id}" style="display:flex; align-items:center; gap:8px; padding:7px 10px; border-bottom:1px solid #eef2f7; cursor:pointer; font-size:13px; background:#fff;">
+                <input type="checkbox" id="${id}" data-name="${_escHtmlAttr(name)}" ${checked} onchange="onBulkDeleteItemToggle(this)" style="width:15px; height:15px; cursor:pointer;">
+                <span style="flex:1;">${_escHtml(name)}${mgrTag}</span>
+            </label>`;
+        }).join('');
+    }
+    _updateBulkDeleteSummary(items);
+}
+
+function onBulkDeleteItemToggle(cb) {
+    const name = cb.getAttribute('data-name');
+    if (cb.checked) _bulkDeleteChecked.add(name);
+    else _bulkDeleteChecked.delete(name);
+    _updateBulkDeleteSummary();
+}
+
+function toggleBulkSelectAll() {
+    const selAll = document.getElementById('bulkDeleteSelectAll');
+    const items = _bulkDeleteFiltered();
+    if (selAll.checked) {
+        items.forEach(({ name }) => _bulkDeleteChecked.add(name));
+    } else {
+        items.forEach(({ name }) => _bulkDeleteChecked.delete(name));
+    }
+    // 보이는 체크박스 동기화
+    document.querySelectorAll('#bulkDeleteList input[type="checkbox"]').forEach(cb => {
+        cb.checked = selAll.checked;
+    });
+    _updateBulkDeleteSummary(items);
+}
+
+function _updateBulkDeleteSummary(items) {
+    if (!items) items = _bulkDeleteFiltered();
+    // 현재 화면 보이는 것만 카운트 (필터 적용된 범위)
+    const visibleNames = new Set(items.map(i => i.name));
+    let visibleChecked = 0;
+    visibleNames.forEach(n => { if (_bulkDeleteChecked.has(n)) visibleChecked++; });
+
+    const summary = document.getElementById('bulkDeleteSummary');
+    summary.textContent = `${visibleChecked} / ${items.length} 선택됨` +
+        (_bulkDeleteChecked.size > visibleChecked ? ` (필터 외 ${_bulkDeleteChecked.size - visibleChecked}건 추가 선택)` : '');
+
+    // 전체선택 체크박스 상태 자동 갱신
+    const selAll = document.getElementById('bulkDeleteSelectAll');
+    selAll.checked = items.length > 0 && visibleChecked === items.length;
+
+    // 삭제 버튼 라벨/활성 상태
+    const btn = document.getElementById('bulkDeleteConfirmBtn');
+    btn.textContent = `선택한 ${_bulkDeleteChecked.size}건 삭제`;
+    btn.disabled = _bulkDeleteChecked.size === 0;
+}
+
+function _confirmBulkDelete() {
+    const names = Array.from(_bulkDeleteChecked);
+    if (!names.length) return;
+
+    // 미리보기 (12건 초과 시 축약)
+    const preview = names.slice(0, 12).join(', ') + (names.length > 12 ? ` 외 ${names.length - 12}건` : '');
+    if (!confirm(`다음 ${names.length}건의 거래처를 영구 삭제합니다.\n이 작업은 되돌릴 수 없습니다.\n\n[${preview}]\n\n계속하시겠습니까?`)) return;
+
+    const clients = JSON.parse(localStorage.getItem('taxClients') || '{}');
+    let deleted = 0;
+    const currentlyOpen = _selectedClient || document.getElementById('clientSearch').value || '';
+    let clearForm = false;
+
+    names.forEach(n => {
+        if (clients[n]) {
+            delete clients[n];
+            deleted++;
+            if (n === currentlyOpen) clearForm = true;
+        }
+    });
+
+    localStorage.setItem('taxClients', JSON.stringify(clients));
+    updateClientList();
+
+    // 현재 폼에 띄워져 있던 거래처가 삭제됐으면 폼/검색창 비움
+    if (clearForm) {
+        _selectedClient = '';
+        const inp = document.getElementById('clientSearch');
+        if (inp) { inp.value = ''; inp._prevValue = undefined; }
+        if (typeof loadClientData === 'function') loadClientData('');
+        if (typeof captureFormSnapshot === 'function') captureFormSnapshot();
+    }
+    if (typeof updateManagerBadge === 'function') updateManagerBadge();
+
+    _bulkDeleteChecked = new Set();
+    document.getElementById('bulkDeleteModal').style.display = 'none';
+    alert(`✅ ${deleted}건의 거래처가 삭제되었습니다.`);
+}
+
+// 안전한 HTML/속성 이스케이프 (다른 곳에 이미 정의돼 있다면 재사용)
+if (typeof _escHtml !== 'function') {
+    window._escHtml = function (s) {
+        return String(s == null ? '' : s)
+            .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    };
+}
+if (typeof _escHtmlAttr !== 'function') {
+    window._escHtmlAttr = function (s) {
+        return String(s == null ? '' : s)
+            .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+    };
+}
+// ─── /거래처 일괄 삭제 ────────────────────────────────────────
 
 // 초기 실행
 applyYears();
@@ -2868,12 +3102,37 @@ function _parseSheetByKeywords(grid, sheetName) {
     data.memo        = valueOf(findLabel(['특이사항', '비고']));
 
     let prevCol = -1, currCol = -1, headerRow = -1;
+    let prevYearFromHeader = null, currYearFromHeader = null;
     for (let r = 0; r < Math.min(grid.length, 25); r++) {
         let pCol = -1, cCol = -1;
         for (let c = 0; c < grid[r].length; c++) {
             const v = String(grid[r][c] || '');
             if (pCol === -1 && /전년/.test(v)) pCol = c;
             if (cCol === -1 && /(당해|당년|당기)/.test(v)) cCol = c;
+        }
+        // 텍스트(전년/당해)로 못 찾으면 4자리 연도(20XX)로 찾기
+        if (pCol === -1 || cCol === -1) {
+            const yearCols = [];
+            const seenYears = new Set();
+            for (let c = 0; c < grid[r].length; c++) {
+                const v = String(grid[r][c] || '').trim();
+                const m = v.match(/^(20\d{2})\s*년?$/);
+                if (m) {
+                    const yr = parseInt(m[1], 10);
+                    // 병합 슬레이브로 동일 연도가 반복될 수 있으니 첫 등장 컬럼만
+                    if (!seenYears.has(yr)) {
+                        seenYears.add(yr);
+                        yearCols.push({ c, year: yr });
+                    }
+                }
+            }
+            if (yearCols.length >= 2) {
+                yearCols.sort((a, b) => a.year - b.year);
+                pCol = yearCols[0].c;
+                cCol = yearCols[yearCols.length - 1].c;
+                prevYearFromHeader = yearCols[0].year;
+                currYearFromHeader = yearCols[yearCols.length - 1].year;
+            }
         }
         if (pCol !== -1 && cCol !== -1) { prevCol = pCol; currCol = cCol; headerRow = r; break; }
     }
@@ -2893,7 +3152,9 @@ function _parseSheetByKeywords(grid, sheetName) {
     const yp = extractYear(/전년/);
     const yc = extractYear(/(당해|당년|당기)/);
     if (yp) data._yearPrev = yp;
+    else if (prevYearFromHeader) data._yearPrev = prevYearFromHeader;
     if (yc) data._yearCurr = yc;
+    else if (currYearFromHeader) data._yearCurr = currYearFromHeader;
 
     if (headerRow !== -1 && prevCol !== -1 && currCol !== -1) {
         const tableMap = [
