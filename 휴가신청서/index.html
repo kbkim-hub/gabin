@@ -260,20 +260,12 @@
     gap: 8px 20px;
     align-items: center;
   }
-  .gubun-row label {
-    display: flex;
+  .gubun-row .gubun-item {
+    display: inline-flex;
     align-items: center;
-    gap: 4px;
-    cursor: pointer;
     font-size: 10pt;
     white-space: nowrap;
     color: #1a1a1a;
-  }
-  .gubun-row input[type="radio"] {
-    cursor: pointer;
-    accent-color: #2c3e50;
-    width: 13px;
-    height: 13px;
   }
   .days-badge {
     font-size: 9.5pt;
@@ -556,30 +548,12 @@
       <td style="padding:0;">
         <div class="gubun-outer">
           <div class="gubun-row">
-            <label>
-              <input type="radio" name="leaveType" value="휴가" checked />
-              휴가&nbsp;(<span class="days-badge" id="d-휴가"></span>)
-            </label>
-            <label>
-              <input type="radio" name="leaveType" value="반차" />
-              반차&nbsp;(<span class="days-badge" id="d-반차"></span>)
-            </label>
-            <label>
-              <input type="radio" name="leaveType" value="병가" />
-              병가&nbsp;(<span class="days-badge" id="d-병가"></span>)
-            </label>
-            <label>
-              <input type="radio" name="leaveType" value="출산휴가" />
-              출산휴가&nbsp;(<span class="days-badge" id="d-출산휴가"></span>)
-            </label>
-            <label>
-              <input type="radio" name="leaveType" value="장기특별휴가" />
-              장기특별휴가&nbsp;(<span class="days-badge" id="d-장기특별휴가"></span>)
-            </label>
-            <label>
-              <input type="radio" name="leaveType" value="기타" />
-              기타&nbsp;(<span class="days-badge" id="d-기타"></span>)
-            </label>
+            <span class="gubun-item">휴가&nbsp;(<span class="days-badge" id="d-휴가"></span>)</span>
+            <span class="gubun-item">반차&nbsp;(<span class="days-badge" id="d-반차"></span>)</span>
+            <span class="gubun-item">병가&nbsp;(<span class="days-badge" id="d-병가"></span>)</span>
+            <span class="gubun-item">출산휴가&nbsp;(<span class="days-badge" id="d-출산휴가"></span>)</span>
+            <span class="gubun-item">장기특별휴가&nbsp;(<span class="days-badge" id="d-장기특별휴가"></span>)</span>
+            <span class="gubun-item">기타&nbsp;(<span class="days-badge" id="d-기타"></span>)</span>
           </div>
         </div>
       </td>
@@ -804,7 +778,6 @@
 
   function resetForm() {
     if (!confirm('작성 내용을 초기화할까요?\n(저장된 이름·팀·직위·연락처는 유지됩니다)')) return;
-    document.querySelector('input[name="leaveType"][value="휴가"]').checked = true;
     document.getElementById('reason').value = '개인사정';
     document.getElementById('periodList').innerHTML = '';
     addPeriod();
