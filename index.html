@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>내 프로젝트</title>
+<title>뚝딱뚝딱 작업실</title>
 <style>
 @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.css');
 
@@ -48,6 +48,16 @@ h1 {
   line-height: 1.15;
   color: var(--text);
   margin-bottom: 10px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+h1 .title-icon {
+  font-size: 34px;
+  line-height: 1;
+  display: inline-block;
+  transform: rotate(-12deg);
 }
 
 .sub {
@@ -174,6 +184,7 @@ footer {
 @media (max-width: 600px) {
   .wrap { padding: 60px 20px 80px; }
   h1 { font-size: 30px; }
+  h1 .title-icon { font-size: 28px; }
   .item { padding: 16px 18px; gap: 14px; }
   .item .icon-box { width: 40px; height: 40px; font-size: 20px; }
 }
@@ -182,7 +193,7 @@ footer {
 <body>
 <div class="wrap">
   <header>
-    <h1>내 프로젝트</h1>
+    <h1><span class="title-icon">🔨</span>뚝딱뚝딱 작업실</h1>
     <div class="sub">이것저것 만들어 보는 중이에요</div>
   </header>
 
