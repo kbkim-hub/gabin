@@ -151,6 +151,7 @@
     border-collapse: collapse;
     width: 100%;
     font-size: 10pt;
+    table-layout: fixed;   /* 칸 너비 고정 → 반차 켜져도 칸 안 틀어짐 */
   }
   .form-table td {
     border: 1px solid #b0b8c4;
@@ -283,58 +284,69 @@
     text-align: center;
   }
 
-  /* 오전/오후 반차 */
-  .bancha-inner {
-    display: none;
-    align-items: center;
-    gap: 20px;
-    margin-top: 10px;
-    padding-top: 10px;
-    border-top: 1px dashed #c5cdd8;
-    font-size: 9.5pt;
-  }
-  .bancha-inner.show { display: flex; }
-  .bancha-inner label {
-    display: flex;
-    align-items: center;
-    gap: 5px;
-    cursor: pointer;
-    color: #1a1a1a;
-  }
-  .bancha-inner input[type="radio"] {
-    cursor: pointer;
-    accent-color: #2c3e50;
-    width: 13px;
-    height: 13px;
-  }
-
   /* ── 기간 ── */
-  .period-wrap {
+  .period-list { display: flex; flex-direction: column; gap: 8px; }
+  .period-row {
     display: flex;
     align-items: center;
-    justify-content: center;
-    gap: 10px;
-    flex-wrap: wrap;
+    gap: 6px;
+    flex-wrap: nowrap;
+  }
+  .form-table .period-row select.period-type {
+    width: auto;
+    min-width: 86px;
+    padding: 4px 6px;
+    border: 1px solid #b0b8c4;
+    border-radius: 4px;
+    background: #f7faff;
+    color: #1a1a1a;
+    font-size: 9.5pt;
+    text-align: left;
+    flex-shrink: 0;
+  }
+  .form-table .period-row select.bancha-time {
+    width: auto;
+    min-width: 56px;
+    padding: 4px 6px;
+    border: 1px solid #d6b76e;
+    border-radius: 4px;
+    background: #fff8e1;
+    color: #6b4f00;
+    font-size: 9.5pt;
+    text-align: left;
+    flex-shrink: 0;
   }
   .date-input-wrap {
     display: flex;
     align-items: center;
     gap: 4px;
     border-bottom: 1px solid #b0b8c4;
+    position: relative;            /* 숨긴 date input 앵커 */
   }
-  .date-input-wrap input[type="text"] {
+  .form-table .date-input-wrap input[type="text"] {
     font-family: inherit;
     font-size: 10pt;
     border: none;
     outline: none;
     background: transparent;
     padding: 2px 4px;
-    width: 96px;
+    width: 90px;
     color: #1a1a1a;
     text-align: center;
   }
+  /* 숨긴 date input을 달력 아이콘 위치에 투명하게 겹쳐서
+     showPicker()가 그 자리에서 펼쳐지도록 함 */
   .date-input-wrap input[type="date"] {
-    display: none;
+    position: absolute;
+    right: 0;
+    bottom: 0;
+    width: 24px;
+    height: 24px;
+    opacity: 0;
+    pointer-events: none;
+    border: none;
+    padding: 0;
+    margin: 0;
   }
   .cal-btn {
     background: none;
@@ -344,9 +356,46 @@
     padding: 2px 2px;
     color: #2c3e50;
     line-height: 1;
+    position: relative;
+    z-index: 2;
   }
   .cal-btn:hover { opacity: 0.7; }
   .period-sep { font-size: 12pt; color: #555; }
+  .period-days {
+    font-size: 9.5pt;
+    color: #1a5fa8;
+    font-weight: 700;
+    white-space: nowrap;
+    min-width: 40px;
+    flex-shrink: 0;
+  }
+  .remove-period-btn {
+    background: none;
+    border: none;
+    color: #b8a99c;
+    cursor: pointer;
+    font-size: 14px;
+    padding: 0 4px;
+    line-height: 1;
+    flex-shrink: 0;
+  }
+  .remove-period-btn:hover { color: #c0392b; }
+  .add-period-btn {
+    margin-top: 10px;
+    background: transparent;
+    border: 1px dashed #8995a4;
+    color: #2c3e50;
+    padding: 6px 14px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 9.5pt;
+    font-family: inherit;
+    transition: background 0.15s, border-color 0.15s;
+  }
+  .add-period-btn:hover {
+    background: #eef3fa;
+    border-color: #2c3e50;
+  }
 
   /* ── 성명 셀 ── */
   .name-cell {
@@ -373,11 +422,20 @@
     .toolbar { display: none !important; }
     .page { width: 100%; min-height: auto; padding: 32mm 15mm 12mm 15mm; box-shadow: none; }
 
-    input[type="date"] { border-bottom-color: transparent !important; }
-    textarea, input[type="text"], input[type="tel"], select {
+    input[type="date"] { border-bottom-color: transparent !important; display: none !important; }
+    textarea, input[type="text"], input[type="tel"] {
       border-bottom-color: transparent !important;
     }
-    .bancha-inner.show { display: flex !important; }
+    .add-period-btn, .remove-period-btn, .cal-btn { display: none !important; }
+
+    .form-table .period-row select.period-type,
+    .form-table .period-row select.bancha-time {
+      border: none !important;
+      background: transparent !important;
+      -webkit-appearance: none;
+      appearance: none;
+      padding: 2px 4px;
+    }
 
     .form-table, .form-table td,
     .approval-table, .approval-table td {
@@ -437,6 +495,11 @@
 
   <!-- ⑤ 메인 테이블 -->
   <table class="form-table">
+    <colgroup>
+      <col style="width: 54px;">
+      <col style="width: 76px;">
+      <col>
+    </colgroup>
 
     <!-- 성명 / 소속(팀) / 직위 — 한 줄 -->
     <tr>
@@ -494,27 +557,27 @@
         <div class="gubun-outer">
           <div class="gubun-row">
             <label>
-              <input type="radio" name="leaveType" value="휴가" checked onchange="onTypeChange()" />
+              <input type="radio" name="leaveType" value="휴가" checked />
               휴가&nbsp;(<span class="days-badge" id="d-휴가"></span>)
             </label>
             <label>
-              <input type="radio" name="leaveType" value="반차" onchange="onTypeChange()" />
+              <input type="radio" name="leaveType" value="반차" />
               반차&nbsp;(<span class="days-badge" id="d-반차"></span>)
             </label>
             <label>
-              <input type="radio" name="leaveType" value="병가" onchange="onTypeChange()" />
+              <input type="radio" name="leaveType" value="병가" />
               병가&nbsp;(<span class="days-badge" id="d-병가"></span>)
             </label>
             <label>
-              <input type="radio" name="leaveType" value="출산휴가" onchange="onTypeChange()" />
+              <input type="radio" name="leaveType" value="출산휴가" />
               출산휴가&nbsp;(<span class="days-badge" id="d-출산휴가"></span>)
             </label>
             <label>
-              <input type="radio" name="leaveType" value="장기특별휴가" onchange="onTypeChange()" />
+              <input type="radio" name="leaveType" value="장기특별휴가" />
               장기특별휴가&nbsp;(<span class="days-badge" id="d-장기특별휴가"></span>)
             </label>
             <label>
-              <input type="radio" name="leaveType" value="기타" onchange="onTypeChange()" />
+              <input type="radio" name="leaveType" value="기타" />
               기타&nbsp;(<span class="days-badge" id="d-기타"></span>)
             </label>
           </div>
@@ -534,26 +597,10 @@
     <tr>
       <td class="cl">기&nbsp;&nbsp;&nbsp;&nbsp;간</td>
       <td class="cv">
-        <div class="period-wrap">
-          <div class="date-input-wrap">
-            <input type="text" id="startDate" placeholder="YYYY-MM-DD" maxlength="10"
-              oninput="formatDate(this); calcDays()" />
-            <input type="date" id="startPicker" onchange="syncFromPicker('startPicker','startDate')" />
-            <button class="cal-btn" type="button" onclick="document.getElementById('startPicker').showPicker()">📅</button>
-          </div>
-          <span class="period-sep">~</span>
-          <div class="date-input-wrap">
-            <input type="text" id="endDate" placeholder="YYYY-MM-DD" maxlength="10"
-              oninput="formatDate(this); calcDays()" />
-            <input type="date" id="endPicker" onchange="syncFromPicker('endPicker','endDate')" />
-            <button class="cal-btn" type="button" onclick="document.getElementById('endPicker').showPicker()">📅</button>
-          </div>
+        <div id="periodList" class="period-list">
+          <!-- 기간 row 템플릿이 JS에서 추가됩니다 -->
         </div>
-        <div class="bancha-inner" id="banchaRow">
-          <span style="font-weight:600; color:#2c3e50; font-size:9.5pt;">반차 구분 ▶</span>
-          <label><input type="radio" name="banchaTime" value="오전" /> 오전반차</label>
-          <label><input type="radio" name="banchaTime" value="오후" /> 오후반차</label>
-        </div>
+        <button type="button" class="add-period-btn" onclick="addPeriod()">+ 기간 추가</button>
       </td>
     </tr>
 
@@ -573,6 +620,39 @@
   <p class="attach-line">※ 첨부 : 관련 증빙 자료</p>
 
 </div>
+
+<!-- 기간 row 템플릿 -->
+<template id="periodRowTemplate">
+  <div class="period-row">
+    <select class="period-type" onchange="onPeriodTypeChange(this); calcDays()">
+      <option value="휴가">휴가</option>
+      <option value="반차">반차</option>
+      <option value="병가">병가</option>
+      <option value="출산휴가">출산휴가</option>
+      <option value="장기특별휴가">장기특별휴가</option>
+      <option value="기타">기타</option>
+    </select>
+    <div class="date-input-wrap">
+      <input type="text" class="start-date" placeholder="YYYY-MM-DD" maxlength="10"
+        oninput="formatDate(this); calcDays()" />
+      <input type="date" class="start-picker" onchange="syncFromPicker(this)" />
+      <button class="cal-btn" type="button" onclick="openPicker(this)">📅</button>
+    </div>
+    <span class="period-sep">~</span>
+    <div class="date-input-wrap">
+      <input type="text" class="end-date" placeholder="YYYY-MM-DD" maxlength="10"
+        oninput="formatDate(this); calcDays()" />
+      <input type="date" class="end-picker" onchange="syncFromPicker(this)" />
+      <button class="cal-btn" type="button" onclick="openPicker(this)">📅</button>
+    </div>
+    <span class="period-days"></span>
+    <button type="button" class="remove-period-btn" onclick="removePeriod(this)" title="이 기간 제거">✕</button>
+    <select class="bancha-time" style="display:none;">
+      <option value="오전">오전</option>
+      <option value="오후">오후</option>
+    </select>
+  </div>
+</template>
 
 <script>
   function doPrint() {
@@ -602,10 +682,17 @@
     else if (v.length > 4) input.value = v.slice(0,4) + '-' + v.slice(4);
     else                   input.value = v;
   }
-  function syncFromPicker(pickerId, textId) {
-    const val = document.getElementById(pickerId).value;
-    if (val) document.getElementById(textId).value = val;
+  function syncFromPicker(picker) {
+    const row = picker.closest('.period-row');
+    const isStart = picker.classList.contains('start-picker');
+    const txt = isStart ? row.querySelector('.start-date') : row.querySelector('.end-date');
+    if (picker.value) txt.value = picker.value;
     calcDays();
+  }
+  function openPicker(btn) {
+    const picker = btn.parentElement.querySelector('input[type="date"]');
+    if (picker.showPicker) picker.showPicker();
+    else picker.focus();
   }
 
   function formatPhone(input) {
@@ -632,51 +719,101 @@
     if (emerg) document.getElementById('emergency').value  = emerg;
   }
 
-  function onTypeChange() {
-    const type = document.querySelector('input[name="leaveType"]:checked').value;
-    const banchaRow = document.getElementById('banchaRow');
-    if (type === '반차') {
-      banchaRow.classList.add('show');
+  /* ── 기간 row 관리 ── */
+  function addPeriod() {
+    const tpl = document.getElementById('periodRowTemplate');
+    const node = tpl.content.firstElementChild.cloneNode(true);
+    document.getElementById('periodList').appendChild(node);
+    calcDays();
+  }
+  function removePeriod(btn) {
+    const rows = document.querySelectorAll('.period-row');
+    const row = btn.closest('.period-row');
+    if (rows.length <= 1) {
+      // 마지막 한 줄은 지우지 않고 입력값만 비움
+      row.querySelector('.period-type').value = '휴가';
+      row.querySelector('.bancha-time').style.display = 'none';
+      row.querySelector('.bancha-time').value = '오전';
+      row.querySelector('.start-date').value = '';
+      row.querySelector('.end-date').value = '';
+      const sp = row.querySelector('.start-picker');
+      const ep = row.querySelector('.end-picker');
+      if (sp) sp.value = '';
+      if (ep) ep.value = '';
     } else {
-      banchaRow.classList.remove('show');
-      document.querySelectorAll('input[name="banchaTime"]').forEach(r => r.checked = false);
+      row.remove();
     }
     calcDays();
   }
+  function onPeriodTypeChange(sel) {
+    const row = sel.closest('.period-row');
+    const bancha = row.querySelector('.bancha-time');
+    if (sel.value === '반차') {
+      bancha.style.display = '';
+    } else {
+      bancha.style.display = 'none';
+    }
+  }
 
+  /* 모든 기간 row를 합산해 구분 배지 업데이트 */
   function calcDays() {
-    const s = document.getElementById('startDate').value;
-    const e = document.getElementById('endDate').value;
-    const type = document.querySelector('input[name="leaveType"]:checked').value;
+    // 모든 type 합계 0으로 초기화
+    const totals = { '휴가':0, '반차':0, '병가':0, '출산휴가':0, '장기특별휴가':0, '기타':0 };
 
-    document.querySelectorAll('.days-badge').forEach(el => el.textContent = '');
-    if (s.length < 10 || e.length < 10) return;
+    const rows = document.querySelectorAll('.period-row');
+    rows.forEach(r => {
+      const s = r.querySelector('.start-date').value;
+      const e = r.querySelector('.end-date').value;
+      const type = r.querySelector('.period-type').value;
+      const out = r.querySelector('.period-days');
 
-    const start = new Date(s);
-    const end   = new Date(e);
-    if (isNaN(start) || isNaN(end) || end < start) return;
+      // 반차는 1줄당 0.5일 (날짜 무관)
+      if (type === '반차') {
+        if (s.length === 10) {
+          out.textContent = '(0.5일)';
+          totals['반차'] += 0.5;
+        } else {
+          out.textContent = '';
+        }
+        return;
+      }
 
-    const rawDays = Math.round((end - start) / (1000 * 60 * 60 * 24)) + 1;
-    const calcVal = type === '반차' ? rawDays * 0.5 : rawDays;
-    const display = calcVal % 1 === 0 ? calcVal : calcVal.toFixed(1);
-    document.getElementById('d-' + type).textContent = display;
+      // 그 외: 시작/종료일 모두 입력되어야 계산
+      if (s.length < 10 || e.length < 10) { out.textContent = ''; return; }
+      const start = new Date(s);
+      const end   = new Date(e);
+      if (isNaN(start) || isNaN(end) || end < start) { out.textContent = ''; return; }
+
+      const rawDays = Math.round((end - start) / 86400000) + 1;
+      out.textContent = `(${rawDays}일)`;
+      if (totals[type] !== undefined) totals[type] += rawDays;
+    });
+
+    // 배지 업데이트
+    Object.keys(totals).forEach(type => {
+      const el = document.getElementById('d-' + type);
+      if (!el) return;
+      const v = totals[type];
+      if (v === 0) {
+        el.textContent = '';
+      } else {
+        el.textContent = v % 1 === 0 ? v : v.toFixed(1);
+      }
+    });
   }
 
   function resetForm() {
     if (!confirm('작성 내용을 초기화할까요?\n(저장된 이름·팀·직위·연락처는 유지됩니다)')) return;
     document.querySelector('input[name="leaveType"][value="휴가"]').checked = true;
-    document.querySelectorAll('input[name="banchaTime"]').forEach(r => r.checked = false);
-    document.getElementById('banchaRow').classList.remove('show');
-    document.getElementById('reason').value      = '개인사정';
-    document.getElementById('startDate').value   = '';
-    document.getElementById('endDate').value     = '';
-    document.getElementById('startPicker').value = '';
-    document.getElementById('endPicker').value   = '';
-    document.querySelectorAll('.days-badge').forEach(el => el.textContent = '');
+    document.getElementById('reason').value = '개인사정';
+    document.getElementById('periodList').innerHTML = '';
+    addPeriod();
     document.getElementById('displayDate').textContent = formatKorDate(new Date());
   }
 
+  /* 초기화 */
   loadSaved();
+  addPeriod();          // 첫 기간 줄 자동 생성
 </script>
 </body>
 </html>
